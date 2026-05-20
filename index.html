@@ -1,0 +1,2337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SDF Gate Plan</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0a0e14;
+    --bg-elevated: #11161f;
+    --bg-row: #0d1219;
+    --bg-row-alt: #0f1520;
+    --border: #1c2433;
+    --border-strong: #2a3447;
+    --text: #e6edf3;
+    --text-dim: #7d8590;
+    --text-muted: #5a6373;
+    --accent: #ffb000;
+    --accent-soft: rgba(255, 176, 0, 0.12);
+    --now: #ff5252;
+    --good: #3fb950;
+    --warn: #f0883e;
+    --danger: #f85149;
+
+    --c-DL: #c8102e; --c-DL-soft: rgba(200, 16, 46, 0.18);
+    --c-UA: #1d4f91; --c-UA-soft: rgba(29, 79, 145, 0.25);
+    --c-AA: #0078d2; --c-AA-soft: rgba(0, 120, 210, 0.22);
+    --c-WN: #f9b612; --c-WN-soft: rgba(249, 182, 18, 0.18);
+    --c-NK: #ffeb00; --c-NK-soft: rgba(255, 235, 0, 0.16);
+    --c-G4: #ff7900; --c-G4-soft: rgba(255, 121, 0, 0.18);
+    --c-SY: #d61f2c; --c-SY-soft: rgba(214, 31, 44, 0.18);
+    --c-MX: #4dbeff; --c-MX-soft: rgba(77, 190, 255, 0.18);
+    --c-XX: #5a6373; --c-XX-soft: rgba(90, 99, 115, 0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    background: linear-gradient(180deg, #11161f 0%, #0a0e14 100%);
+    border-bottom: 1px solid var(--border-strong);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .brand { display: flex; align-items: baseline; gap: 12px; }
+  .brand-mark {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+  .brand-mark::before { content: "▣"; margin-right: 6px; color: var(--accent); }
+  .brand-sub {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+
+  .topbar-meta {
+    margin-left: auto;
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .stat { display: flex; flex-direction: column; align-items: flex-end; }
+  .stat-label {
+    font-size: 9px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.12em;
+  }
+  .stat-val { color: var(--text); font-weight: 600; font-size: 14px; }
+  .stat-val.live { color: var(--accent); }
+  .stat-val.good { color: var(--good); }
+  .stat-val.warn { color: var(--warn); }
+  .stat-val.danger { color: var(--danger); }
+
+  .controls {
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    position: sticky;
+    top: 51px;
+    z-index: 40;
+  }
+  .control-group { display: flex; gap: 6px; align-items: center; }
+  .control-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-right: 4px;
+    font-weight: 600;
+  }
+  .btn {
+    background: var(--bg-row);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .btn:hover { background: var(--border); color: var(--text); border-color: var(--border-strong); }
+  .btn.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .input-base, input[type=date], input[type=time], input[type=number], input[type=text], select {
+    background: var(--bg-row);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    border-radius: 3px;
+    color-scheme: dark;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+  .file-label {
+    display: inline-block;
+    padding: 6px 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .file-label:hover { background: rgba(255, 176, 0, 0.2); }
+  .file-label input { display: none; }
+
+  .cursor-slider {
+    width: 240px;
+    accent-color: var(--accent);
+  }
+
+  /* tab nav */
+  .view-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--bg-elevated);
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .view-tab {
+    padding: 12px 24px;
+    background: transparent;
+    color: var(--text-dim);
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .view-tab:hover { color: var(--text); }
+  .view-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .view-tab .ut-count {
+    margin-left: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 2px;
+  }
+  .view-tab .ut-count.has {
+    color: var(--danger);
+    background: rgba(248, 81, 73, 0.12);
+  }
+
+  /* === Manual assign tab === */
+  .unassigned-wrap { padding: 20px; max-width: 1400px; margin: 0 auto; }
+  .unassigned-row {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .unassigned-row.open { border-color: var(--border-strong); }
+  .unassigned-head {
+    display: grid;
+    grid-template-columns: 140px 90px 110px 1fr 220px 24px;
+    gap: 14px;
+    align-items: center;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .unassigned-head:hover { background: var(--bg-row-alt); }
+  .unassigned-head .lbl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .badge-type {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .badge-type.turn { background: var(--accent-soft); color: var(--accent); }
+  .badge-type.ron_in, .badge-type.ron_out { background: rgba(248,81,73,0.15); color: var(--danger); }
+  .chev { font-size: 14px; color: var(--text-muted); transition: transform 0.15s; text-align: center; }
+  .unassigned-row.open .chev { transform: rotate(180deg); color: var(--accent); }
+
+  .unassigned-body {
+    border-top: 1px solid var(--border);
+    padding: 14px;
+    background: var(--bg-row);
+  }
+  .picker-legend {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .picker-legend .key {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .picker-legend .swatch {
+    width: 10px; height: 10px; border-radius: 2px;
+  }
+
+  .gate-pick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .gate-pick {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-align: left;
+    background: var(--bg);
+    color: var(--text-dim);
+    transition: all 0.1s;
+    border-left-width: 3px;
+  }
+  .gate-pick:hover:not(:disabled) { transform: translateY(-1px); }
+  .gate-pick:disabled { cursor: not-allowed; opacity: 0.4; }
+  .gate-pick.preferred { border-left-color: var(--accent); color: var(--text); }
+  .gate-pick.preferred:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .gate-pick.free { border-left-color: var(--good); color: var(--text); }
+  .gate-pick.free:hover { background: rgba(63,185,80,0.08); border-color: var(--good); }
+  .gate-pick.conflict { border-left-color: var(--warn); color: var(--text-dim); }
+  .gate-pick.conflict:hover { background: rgba(240,136,62,0.08); border-color: var(--warn); }
+  .gate-pick.incompatible { border-left-color: var(--text-muted); }
+  .gate-pick .g {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .gate-pick .g .tag {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+  }
+  .gate-pick .meta { margin-top: 4px; font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .gate-pick .conflict-note { margin-top: 4px; font-size: 9px; color: var(--warn); }
+  .gate-pick .incompat-note { margin-top: 4px; font-size: 9px; color: var(--text-muted); }
+
+  .unassigned-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+  .unassigned-empty .big { font-size: 18px; color: var(--good); margin-bottom: 8px; }
+
+  .concourse-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--bg-row);
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ctab {
+    padding: 10px 20px;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .ctab:hover { color: var(--text-dim); }
+  .ctab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .ctab .count {
+    margin-left: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  /* === Gantt === */
+  .gantt-wrap {
+    overflow-x: auto;
+    overflow-y: visible;
+    background: var(--bg);
+    position: relative;
+  }
+  .gantt {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-width: max-content;
+  }
+  .gate-col {
+    position: sticky;
+    left: 0;
+    background: var(--bg-elevated);
+    border-right: 1px solid var(--border-strong);
+    z-index: 10;
+  }
+  .gate-header-cell {
+    height: 44px;
+    border-bottom: 2px solid var(--border-strong);
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+    z-index: 11;
+  }
+  .gate-cell {
+    height: 56px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    background: var(--bg-row);
+  }
+  .gate-cell.inactive { opacity: 0.4; background: var(--bg-row-alt); }
+  .gate-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .gate-meta {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    display: flex;
+    gap: 8px;
+  }
+  .gate-meta .lease { color: var(--text-dim); font-weight: 600; }
+  .gate-meta .common { color: var(--accent); font-weight: 600; }
+
+  .time-col { position: relative; }
+  .time-header {
+    height: 44px;
+    border-bottom: 2px solid var(--border-strong);
+    background: var(--bg-elevated);
+    position: sticky;
+    top: 0;
+    z-index: 9;
+    display: flex;
+    align-items: flex-end;
+  }
+  .time-tick {
+    flex: 0 0 auto;
+    height: 100%;
+    border-left: 1px solid var(--border);
+    padding: 0 4px 6px 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: flex-end;
+  }
+  .time-tick.hour {
+    border-left: 1px solid var(--border-strong);
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+
+  .row {
+    height: 56px;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-row);
+  }
+  .row:nth-child(even) { background: var(--bg-row-alt); }
+  .row.inactive { opacity: 0.4; }
+
+  /* hour gridlines drawn via repeating-linear-gradient below */
+
+  .bar {
+    position: absolute;
+    top: 8px;
+    height: 40px;
+    border-radius: 3px;
+    border: 1px solid;
+    padding: 4px 6px;
+    overflow: hidden;
+    cursor: grab;
+    transition: filter 0.1s, transform 0.1s;
+    font-family: 'JetBrains Mono', monospace;
+    z-index: 2;
+    user-select: none;
+  }
+  .bar:hover { filter: brightness(1.25); transform: translateY(-1px); z-index: 5; }
+  .bar.dragging { opacity: 0.3; cursor: grabbing; }
+  body.dragging-bar { cursor: grabbing !important; }
+  body.dragging-bar .bar { cursor: grabbing !important; }
+  .row.drop-target {
+    background: rgba(255, 176, 0, 0.08) !important;
+    outline: 1px dashed var(--accent);
+    outline-offset: -1px;
+  }
+  .row.drop-target.invalid {
+    background: rgba(248, 81, 73, 0.08) !important;
+    outline: 1px dashed var(--danger);
+  }
+  .bar.ron { opacity: 0.85; border-style: dashed; }
+  .bar.orphan { border-style: dotted; box-shadow: 0 0 0 1px rgba(248,81,73,0.35) inset; }
+  .bar .pair-link {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 9px;
+    color: var(--accent);
+    opacity: 0.9;
+  }
+  .bar.conflict {
+    box-shadow: 0 0 0 2px var(--danger), 0 0 12px rgba(248,81,73,0.5);
+  }
+  .bar-line1 { font-size: 10px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-line2 { font-size: 9px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .cursor-line {
+    position: absolute;
+    top: 44px;
+    bottom: 0;
+    width: 2px;
+    background: var(--accent);
+    z-index: 8;
+    pointer-events: none;
+    box-shadow: 0 0 8px rgba(255,176,0,0.5);
+  }
+  .cursor-label {
+    position: absolute;
+    top: 4px;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: #000;
+    padding: 2px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  /* tooltip */
+  .tooltip {
+    position: fixed;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 100;
+    max-width: 320px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    display: none;
+  }
+  .tooltip .tt-head { font-weight: 700; margin-bottom: 6px; font-size: 12px; }
+  .tooltip .tt-row { display: flex; justify-content: space-between; gap: 16px; color: var(--text-dim); }
+  .tooltip .tt-row b { color: var(--text); font-weight: 600; }
+
+  /* scorecards */
+  .scorecard-wrap {
+    padding: 16px 20px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+  .scorecard-head {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .scorecard-head .pill {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 10px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .slots-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .slot-panel {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+  }
+  .slot-panel-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+  }
+  .slot-panel-title .count {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+  }
+  .slot-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 6px;
+  }
+  .slot {
+    background: var(--bg-row);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--good);
+    padding: 6px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    border-radius: 2px;
+  }
+  .slot.soon { border-left-color: var(--warn); }
+  .slot .g { font-size: 13px; font-weight: 700; color: var(--text); }
+  .slot .d { color: var(--text-dim); margin-top: 2px; }
+  .slot .occ { color: var(--text-muted); margin-top: 2px; }
+
+  .empty-msg {
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 12px;
+    text-align: center;
+    font-size: 12px;
+  }
+
+  /* rules tab */
+  .rules-wrap { padding: 20px; max-width: 1400px; margin: 0 auto; }
+  .rules-section { margin-bottom: 24px; }
+  .rules-section h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+  .globals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .global-field { display: flex; flex-direction: column; gap: 4px; }
+  .global-field label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+
+  .gates-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .gates-table th, .gates-table td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .gates-table th {
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+  }
+  .gates-table tbody tr:hover { background: var(--bg-row-alt); }
+  .gates-table input, .gates-table select {
+    width: 100%;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid transparent;
+    padding: 4px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .gates-table input:focus, .gates-table select:focus {
+    background: var(--bg);
+    border-color: var(--border-strong);
+  }
+  .gates-table input[type=checkbox] { width: auto; accent-color: var(--accent); }
+  .gates-table select option { background: var(--bg-elevated); color: var(--text); }
+  .global-field input { color: var(--text); }
+  .rules-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+  .needs-attention {
+    background: rgba(248, 81, 73, 0.08);
+    border: 1px solid var(--danger);
+    border-radius: 4px;
+    padding: 12px;
+    margin: 12px 20px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .needs-attention .ttl { color: var(--danger); font-weight: 700; margin-bottom: 6px; }
+
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 80px 20px;
+    color: var(--text-dim);
+    gap: 12px;
+  }
+  .empty-state .big { font-size: 18px; color: var(--text); }
+  .empty-state .hint { font-size: 12px; max-width: 480px; text-align: center; }
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">SDF/KSDF</div>
+    <div class="brand-sub">Gate Plan</div>
+  </div>
+  <div class="topbar-meta">
+    <div class="stat">
+      <div class="stat-label">Date</div>
+      <div class="stat-val live" id="meta-date">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Cursor</div>
+      <div class="stat-val" id="meta-cursor">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Occupied</div>
+      <div class="stat-val warn" id="meta-occupied">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Open</div>
+      <div class="stat-val good" id="meta-open">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Inactive</div>
+      <div class="stat-val" id="meta-inactive">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Util %</div>
+      <div class="stat-val live" id="meta-util">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Flights</div>
+      <div class="stat-val" id="meta-flights">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="view-tabs">
+  <button class="view-tab active" data-view="plan">Gate Plan</button>
+  <button class="view-tab" data-view="manual">Manual Assign <span class="ut-count" id="ut-count">0</span></button>
+  <button class="view-tab" data-view="rules">Gate Rules</button>
+</div>
+
+<!-- Plan view -->
+<div id="view-plan">
+  <div class="controls">
+    <div class="control-group">
+      <label class="file-label">Load Daily Extract Report
+        <input type="file" id="file-input" accept=".xlsx,.xls">
+      </label>
+      <span id="file-name" style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:10px;margin-left:4px;"></span>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Date</span>
+      <button class="btn" id="date-prev">◀</button>
+      <input type="date" id="date-input">
+      <button class="btn" id="date-next">▶</button>
+      <button class="btn" id="date-today">Today</button>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Cursor</span>
+      <input type="range" class="cursor-slider" id="cursor-slider" min="0" max="1260" value="450" step="5">
+      <input type="time" id="cursor-time" style="width:90px;">
+      <button class="btn" id="cursor-now">Now</button>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Zoom</span>
+      <button class="btn" data-zoom="0.6">60%</button>
+      <button class="btn active" data-zoom="1">100%</button>
+      <button class="btn" data-zoom="1.5">150%</button>
+      <button class="btn" data-zoom="2.5">250%</button>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Show</span>
+      <button class="btn active" data-filter="all">All</button>
+      <button class="btn" data-filter="active">Active</button>
+      <button class="btn" data-filter="ron">RON</button>
+      <button class="btn" data-filter="turns">Turns</button>
+    </div>
+  </div>
+
+  <div class="concourse-tabs">
+    <button class="ctab active" data-concourse="A">Concourse A <span class="count" id="count-A"></span></button>
+    <button class="ctab" data-concourse="B">Concourse B <span class="count" id="count-B"></span></button>
+    <button class="ctab" data-concourse="all">Both <span class="count" id="count-all"></span></button>
+  </div>
+
+  <div id="needs-attention-wrap"></div>
+
+  <div class="gantt-wrap" id="gantt-wrap">
+    <div id="gantt-empty" class="empty-state">
+      <div class="big">No schedule loaded</div>
+      <div class="hint">Load a Diio Mi daily-extract <code>.xlsx</code> using the button above. The plan will populate automatically using the current gate rules.</div>
+    </div>
+    <div class="gantt" id="gantt" style="display:none;"></div>
+  </div>
+
+  <div class="scorecard-wrap">
+    <div class="scorecard-head">
+      Open slots at cursor
+      <span class="pill" id="slots-cursor-label">—</span>
+    </div>
+    <div class="slots-grid">
+      <div class="slot-panel">
+        <div class="slot-panel-title">
+          <span>Available now</span>
+          <span class="count" id="avail-count">0</span>
+        </div>
+        <div class="slot-list" id="avail-list"></div>
+      </div>
+      <div class="slot-panel">
+        <div class="slot-panel-title">
+          <span>Opening soon (≤<span id="soon-horizon">60</span> min)</span>
+          <span class="count" id="soon-count">0</span>
+        </div>
+        <div class="slot-list" id="soon-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Manual-assign view -->
+<div id="view-manual" style="display:none;">
+  <div class="unassigned-wrap" id="unassigned-list"></div>
+</div>
+
+<!-- Rules view -->
+<div id="view-rules" style="display:none;">
+  <div class="rules-wrap">
+    <div class="rules-section">
+      <h3>Global Defaults</h3>
+      <div class="globals-grid" id="globals-grid"></div>
+    </div>
+    <div class="rules-section">
+      <h3>Gates</h3>
+      <div style="overflow-x:auto; border:1px solid var(--border); border-radius:4px;">
+        <table class="gates-table" id="gates-table"></table>
+      </div>
+      <div class="rules-actions">
+        <button class="btn" id="rules-save">Save</button>
+        <button class="btn" id="rules-reset">Reset to defaults</button>
+        <button class="btn" id="rules-export">Export JSON</button>
+        <label class="file-label">Import JSON
+          <input type="file" id="rules-import" accept=".json">
+        </label>
+        <button class="btn" id="rules-add">+ Add gate</button>
+        <span id="rules-save-msg" style="color:var(--good);font-family:'JetBrains Mono',monospace;font-size:11px;margin-left:auto;"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// =============================================================
+// Constants
+// =============================================================
+const GANTT_START_MIN = 270;   // 04:30 = 270 min since midnight
+const GANTT_END_MIN   = 270 + 21*60; // 01:30 next day (21h window)
+const GANTT_SPAN_MIN  = GANTT_END_MIN - GANTT_START_MIN; // 1260
+const PX_PER_MIN_BASE = 4;     // 4 px/min @ 100% zoom
+
+// Map IATA operator codes → marketing code, for color/policy lookup.
+// Anything else falls back to its marketing code from the row.
+const OPERATOR_TO_MARKETING = {
+  DAL: 'DL', RPA: 'DL', EDV: 'DL', SKW: 'DL', // SKW also flies for UA/AA — overridden by Mkt Al column
+  AAL: 'AA', ENY: 'AA', PDT: 'AA', OH:  'AA', MQ:  'AA',
+  UAL: 'UA', ASH: 'UA', GJS: 'UA',
+  SWA: 'WN', NKS: 'NK', AAY: 'G4', MXY: 'MX', SCX: 'SY',
+};
+
+const SIZE_RANK = { regional: 1, narrowbody: 2, widebody: 3 };
+
+// =============================================================
+// State
+// =============================================================
+const STATE = {
+  rules: null,
+  flights: [],            // all parsed rows from Diio
+  availableDates: [],     // YYYY-MM-DD list in extract
+  selectedDate: null,
+  view: 'plan',           // 'plan' | 'rules'
+  concourse: 'A',
+  filter: 'all',
+  zoom: 1.0,
+  cursorMin: 720,         // minutes since midnight, default noon
+  assignments: [],        // [{gate, flight, bar_start, bar_end, type}]
+  unassigned: [],
+  conflicts: new Set(),   // assignment indices in conflict
+};
+
+// =============================================================
+// Rules persistence
+// =============================================================
+const RULES_KEY = 'sdf_gate_rules_v1';
+let DEFAULT_RULES = null;
+
+async function loadDefaultRules() {
+  try {
+    const r = await fetch('gate_rules.default.json');
+    if (!r.ok) throw new Error(r.status);
+    DEFAULT_RULES = await r.json();
+  } catch (e) {
+    console.warn('Could not fetch gate_rules.default.json — using built-in fallback', e);
+    DEFAULT_RULES = BUILTIN_FALLBACK_RULES;
+  }
+}
+
+function loadRules() {
+  const stored = localStorage.getItem(RULES_KEY);
+  if (stored) {
+    try { return JSON.parse(stored); }
+    catch (e) { console.warn('Bad stored rules, falling back to defaults'); }
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_RULES));
+}
+
+function saveRules(rules) {
+  localStorage.setItem(RULES_KEY, JSON.stringify(rules));
+}
+
+// Inlined fallback so the file works when opened via file:// (fetch blocked).
+// Keep in sync with gate_rules.default.json.
+const BUILTIN_FALLBACK_RULES = {
+  "version": 1,
+  "globals": {
+    "min_ground_time_min": 35,
+    "turn_buffer_min": 5,
+    "opening_soon_horizon_min": 60,
+    "max_turn_gap_min": 240
+  },
+  "carriers": [
+    { "code": "DL", "name": "Delta Air Lines",      "operators": ["DAL","RPA","EDV","SKW","ENY"] },
+    { "code": "AA", "name": "American Airlines",    "operators": ["AAL","RPA","ENY","SKW","PDT","OH","MQ"] },
+    { "code": "UA", "name": "United Airlines",      "operators": ["UAL","SKW","RPA","ASH","GJS"] },
+    { "code": "WN", "name": "Southwest Airlines",   "operators": ["SWA"] },
+    { "code": "NK", "name": "Spirit Airlines",      "operators": ["NKS"] },
+    { "code": "G4", "name": "Allegiant Air",        "operators": ["AAY"] },
+    { "code": "MX", "name": "Breeze Airways",       "operators": ["MXY"] },
+    { "code": "SY", "name": "Sun Country Airlines", "operators": ["SCX"] }
+  ],
+  "size_classes": {
+    "regional":   ["E145","CRJ2","CR2","CRJ5","CR5","CRJ7","CR7","CRJ9","CR9","E170","E70","E175","E75","E7W"],
+    "narrowbody": ["A319","319","A320","320","A321","321","A21N","A223","B712","717","B737","737","B738","738","B739","739","B38M","7M8","B39M","7M9","7S8","7S7"],
+    "widebody":   ["B752","757","B763","767","A332","332","A333","333","A359","359","B772","777","B788","788","B789","789","B78X","78X"]
+  },
+  "gates": [
+    { "id":"A1",  "concourse":"A","status":"active","use_type":"leased",     "leaseholder":"DL","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A3",  "concourse":"A","status":"active","use_type":"leased",     "leaseholder":"DL","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A4",  "concourse":"A","status":"active","use_type":"leased",     "leaseholder":"DL","max_size":"regional",  "jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A5",  "concourse":"A","status":"active","use_type":"leased",     "leaseholder":"DL","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A6",  "concourse":"A","status":"active","use_type":"leased",     "leaseholder":"NK","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A8",  "concourse":"A","status":"active","use_type":"common-use", "leaseholder":null,"max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A9",  "concourse":"A","status":"active","use_type":"leased",     "leaseholder":"UA","max_size":"regional",  "jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A10", "concourse":"A","status":"active","use_type":"leased",     "leaseholder":"G4","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A11", "concourse":"A","status":"active","use_type":"leased",     "leaseholder":"UA","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A12", "concourse":"A","status":"active","use_type":"common-use", "leaseholder":null,"max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A14", "concourse":"A","status":"active","use_type":"leased",     "leaseholder":"UA","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"A15", "concourse":"A","status":"active","use_type":"leased",     "leaseholder":"UA","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B2",  "concourse":"B","status":"active","use_type":"leased",     "leaseholder":"AA","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B4",  "concourse":"B","status":"active","use_type":"leased",     "leaseholder":"AA","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B5",  "concourse":"B","status":"active","use_type":"leased",     "leaseholder":"AA","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B6",  "concourse":"B","status":"active","use_type":"leased",     "leaseholder":"AA","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B9",  "concourse":"B","status":"active","use_type":"common-use", "leaseholder":null,"max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"Shared MX / WN" },
+    { "id":"B11", "concourse":"B","status":"active","use_type":"leased",     "leaseholder":"WN","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B15", "concourse":"B","status":"active","use_type":"leased",     "leaseholder":"WN","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B16", "concourse":"B","status":"active","use_type":"leased",     "leaseholder":"AA","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B16A","concourse":"B","status":"active","use_type":"leased",     "leaseholder":"AA","max_size":"regional",  "jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B17", "concourse":"B","status":"active","use_type":"leased",     "leaseholder":"WN","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B18", "concourse":"B","status":"active","use_type":"leased",     "leaseholder":"AA","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B18A","concourse":"B","status":"active","use_type":"leased",     "leaseholder":"AA","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" },
+    { "id":"B19", "concourse":"B","status":"active","use_type":"leased",     "leaseholder":"WN","max_size":"narrowbody","jet_bridge":true,"hardstand":false,"notes":"" }
+  ]
+};
+
+// =============================================================
+// Time helpers
+// =============================================================
+function parseHHMM(s) {
+  if (s === null || s === undefined) return null;
+  if (typeof s === 'number') s = String(s);
+  s = String(s).trim();
+  if (!s || s === 'x' || s === 'X') return null;
+  // strip trailing " EDT" etc.
+  s = s.replace(/\s*[A-Z]{2,4}$/, '');
+  if (!/^\d{1,4}$/.test(s)) return null;
+  if (s.length <= 2) {
+    // "5" or "05" → :05 of hour 0? Diio uses HHMM, so treat short as minutes only edge case
+    return parseInt(s, 10);
+  }
+  if (s.length === 3) s = '0' + s;
+  const hh = parseInt(s.slice(0,2), 10);
+  const mm = parseInt(s.slice(2,4), 10);
+  if (isNaN(hh) || isNaN(mm) || hh > 47 || mm > 59) return null;
+  return hh*60 + mm;
+}
+function minToHHMM(m) {
+  m = ((m % 1440) + 1440) % 1440;
+  const hh = Math.floor(m/60);
+  const mm = m % 60;
+  return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+}
+function pxPerMin() { return PX_PER_MIN_BASE * STATE.zoom; }
+function minToPx(m) { return (m - GANTT_START_MIN) * pxPerMin(); }
+function totalPx() { return GANTT_SPAN_MIN * pxPerMin(); }
+
+function fmtDur(min) {
+  if (min < 60) return min + ' min';
+  const h = Math.floor(min/60), m = min % 60;
+  return m === 0 ? `${h} h` : `${h}h ${m}m`;
+}
+
+// =============================================================
+// Diio ingestion
+// =============================================================
+async function loadDiioFile(file) {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+  // Header row is the first row whose first cell is 'Date'
+  let headerIdx = aoa.findIndex(r => Array.isArray(r) && r[0] === 'Date');
+  if (headerIdx < 0) throw new Error("Couldn't find header row (expected first cell = 'Date')");
+  const headers = aoa[headerIdx];
+  const idx = (name) => headers.indexOf(name);
+  const I = {
+    date: idx('Date'),
+    mktAl: idx('Mkt Al'),
+    opAl: idx('Op Al'),
+    orig: idx('Orig'),
+    dest: idx('Dest'),
+    flight: idx('Flight'),
+    equip: idx('Equip'),
+    seats: idx('Seats'),
+    depTime: idx('Dep Time'),
+    arrTime: idx('Arr Time'),
+    block: idx('Block Mins'),
+    arrFlag: idx('Arr Flag'),
+  };
+  const flights = [];
+  for (let i = headerIdx + 1; i < aoa.length; i++) {
+    const r = aoa[i];
+    if (!r || !r[I.date]) continue;
+    const date = r[I.date];
+    const dateStr = (date instanceof Date)
+      ? date.toISOString().slice(0,10)
+      : String(date).slice(0,10);
+    const orig = r[I.orig];
+    const dest = r[I.dest];
+    if (orig !== 'SDF' && dest !== 'SDF') continue; // safety
+    const isDeparture = (orig === 'SDF');
+    flights.push({
+      date: dateStr,
+      mktAl: r[I.mktAl] || '',
+      opAl: r[I.opAl] || '',
+      orig, dest,
+      flight: r[I.flight] != null ? String(r[I.flight]).replace(/\.0$/, '') : '',
+      equip: r[I.equip] || '',
+      seats: r[I.seats] || null,
+      depTime: parseHHMM(r[I.depTime]),
+      arrTime: parseHHMM(r[I.arrTime]),
+      block: r[I.block] != null ? Number(r[I.block]) : null,
+      arrFlag: r[I.arrFlag] != null ? Number(r[I.arrFlag]) : 0,
+      isDeparture,
+    });
+  }
+  const datesSet = new Set(flights.map(f => f.date));
+  return { flights, dates: Array.from(datesSet).sort() };
+}
+
+// =============================================================
+// Turn pairing
+// =============================================================
+// Same-day pass: pair arrivals to departures within one op-day.
+// Returns the turns and the leftovers needed for overnight pairing.
+function pairSameDay(flights, date, rules) {
+  const dayFlights = flights.filter(f => f.date === date);
+  const arrivals = dayFlights.filter(f => !f.isDeparture)
+    .map(f => ({ ...f, _sdfMin: f.arrTime != null ? f.arrTime + (f.arrFlag > 0 ? 1440 : 0) : null }))
+    .filter(f => f._sdfMin != null)
+    .sort((a,b) => a._sdfMin - b._sdfMin);
+  const departures = dayFlights.filter(f => f.isDeparture)
+    .map(f => ({ ...f, _sdfMin: f.depTime }))
+    .filter(f => f._sdfMin != null)
+    .sort((a,b) => a._sdfMin - b._sdfMin);
+
+  const usedDep = new Set();
+  const turns = [];
+  const minGround = rules.globals.min_ground_time_min;
+  const maxGap = rules.globals.max_turn_gap_min;
+
+  for (const a of arrivals) {
+    let best = -1, bestGap = Infinity;
+    for (let i = 0; i < departures.length; i++) {
+      if (usedDep.has(i)) continue;
+      const d = departures[i];
+      if (d.opAl !== a.opAl) continue;
+      if (d.equip !== a.equip) continue;
+      const gap = d._sdfMin - a._sdfMin;
+      if (gap < minGround) continue;
+      if (gap > maxGap) continue;
+      if (gap < bestGap) { bestGap = gap; best = i; }
+    }
+    if (best >= 0) {
+      usedDep.add(best);
+      turns.push({ arr: a, dep: departures[best] });
+    }
+  }
+  const unpaired_arrivals = arrivals.filter(a => !turns.some(t => t.arr === a));
+  const unpaired_departures = departures.filter((d, i) => !usedDep.has(i));
+  return { turns, unpaired_arrivals, unpaired_departures };
+}
+
+// Overnight pass: pair a prior-day's unpaired arrival with a next-day's unpaired departure
+// (same Op Al + Equip + plausible overnight gap). Used to fold a RON-IN[D] together with
+// the corresponding RON-OUT[D+1] for the same aircraft — they represent ONE gate booking.
+// Returns { paired: [{arr, dep, gap_min}], unpaired_arrivals, unpaired_departures }.
+function pairOvernight(arrivals, departures, rules) {
+  const MIN_GAP = 60;       // <1h between arr and next-day dep is implausible
+  const MAX_GAP = 16 * 60;  // >16h overnight implies a non-pair
+  const sortedArr = [...arrivals].sort((a,b) => a._sdfMin - b._sdfMin);
+  const used = new Set();
+  const paired = [];
+  for (const a of sortedArr) {
+    let best = -1, bestGap = Infinity;
+    // Physical overnight gap: (midnight - arr_minute) + dep_minute_next_day
+    const fromArrToMidnight = 1440 - a._sdfMin; // negative if a._sdfMin > 1440 (post-midnight arrival)
+    for (let i = 0; i < departures.length; i++) {
+      if (used.has(i)) continue;
+      const d = departures[i];
+      if (d.opAl !== a.opAl) continue;
+      if (d.equip !== a.equip) continue;
+      const gap = fromArrToMidnight + d._sdfMin;
+      if (gap < MIN_GAP || gap > MAX_GAP) continue;
+      if (gap < bestGap) { bestGap = gap; best = i; }
+    }
+    if (best >= 0) {
+      used.add(best);
+      paired.push({ arr: a, dep: departures[best], gap_min: bestGap });
+    }
+  }
+  return {
+    paired,
+    unpaired_arrivals: arrivals.filter(a => !paired.some(p => p.arr === a)),
+    unpaired_departures: departures.filter((d, i) => !used.has(i)),
+  };
+}
+
+function neighborDate(flights, date, delta) {
+  const d = new Date(date + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  const iso = d.toISOString().slice(0, 10);
+  return flights.some(f => f.date === iso) ? iso : null;
+}
+
+// Build the full op list for one viewed date, including overnight pairs spanning
+// D-1 → D (morning continuations) and D → D+1 (evening continuations).
+function buildOpsForDate(flights, date, rules) {
+  const same = pairSameDay(flights, date, rules);
+  const prevDate = neighborDate(flights, date, -1);
+  const nextDate = neighborDate(flights, date, +1);
+
+  // Pair THIS day's leftover arrivals with NEXT day's leftover departures (overnight forward).
+  let pairedForward = [];
+  let orphanArrivals = same.unpaired_arrivals;
+  if (nextDate) {
+    const nxt = pairSameDay(flights, nextDate, rules);
+    const r = pairOvernight(same.unpaired_arrivals, nxt.unpaired_departures, rules);
+    pairedForward = r.paired;
+    orphanArrivals = r.unpaired_arrivals;
+  }
+
+  // Pair THIS day's leftover departures with PREV day's leftover arrivals (overnight backward).
+  let pairedBackward = [];
+  let orphanDepartures = same.unpaired_departures;
+  if (prevDate) {
+    const prv = pairSameDay(flights, prevDate, rules);
+    const r = pairOvernight(prv.unpaired_arrivals, same.unpaired_departures, rules);
+    pairedBackward = r.paired;
+    orphanDepartures = r.unpaired_departures;
+  }
+
+  const ops = [];
+  for (const t of same.turns) {
+    ops.push({
+      type: 'turn',
+      arr: t.arr, dep: t.dep,
+      airline: t.arr.mktAl, op: t.arr.opAl, equip: t.arr.equip,
+      seats: t.arr.seats || t.dep.seats,
+      gate: null,
+      bar_start: t.arr._sdfMin,
+      bar_end: t.dep._sdfMin,
+    });
+  }
+  for (const p of pairedBackward) {
+    ops.push({
+      type: 'ron_out',
+      paired: true,
+      arr: null, dep: p.dep,
+      arr_prev: p.arr,             // arrival on prev date for tooltip
+      airline: p.dep.mktAl, op: p.dep.opAl, equip: p.dep.equip,
+      seats: p.dep.seats,
+      gate: null,
+      bar_start: GANTT_START_MIN,
+      bar_end: p.dep._sdfMin,
+    });
+  }
+  for (const p of pairedForward) {
+    ops.push({
+      type: 'ron_in',
+      paired: true,
+      arr: p.arr, dep: null,
+      dep_next: p.dep,             // departure on next date for tooltip
+      airline: p.arr.mktAl, op: p.arr.opAl, equip: p.arr.equip,
+      seats: p.arr.seats,
+      gate: null,
+      bar_start: p.arr._sdfMin,
+      bar_end: GANTT_END_MIN,
+    });
+  }
+  for (const d of orphanDepartures) {
+    ops.push({
+      type: 'ron_out',
+      paired: false,
+      arr: null, dep: d,
+      airline: d.mktAl, op: d.opAl, equip: d.equip,
+      seats: d.seats,
+      gate: null,
+      bar_start: GANTT_START_MIN,
+      bar_end: d._sdfMin,
+    });
+  }
+  for (const a of orphanArrivals) {
+    ops.push({
+      type: 'ron_in',
+      paired: false,
+      arr: a, dep: null,
+      airline: a.mktAl, op: a.opAl, equip: a.equip,
+      seats: a.seats,
+      gate: null,
+      bar_start: a._sdfMin,
+      bar_end: GANTT_END_MIN,
+    });
+  }
+  return ops.sort((a,b) => a.bar_start - b.bar_start);
+}
+
+// =============================================================
+// Auto-assignment
+// =============================================================
+function equipSize(equip, rules) {
+  const e = String(equip || '').toUpperCase();
+  for (const [size, codes] of Object.entries(rules.size_classes)) {
+    if (codes.map(c => c.toUpperCase()).includes(e)) return size;
+  }
+  return 'narrowbody'; // default
+}
+
+function gateAcceptsEquip(gate, equip, rules) {
+  if (gate.status !== 'active') return false;
+  const need = SIZE_RANK[equipSize(equip, rules)] || 2;
+  const cap  = SIZE_RANK[gate.max_size] || 2;
+  return need <= cap;
+}
+
+function gatePrefersAirline(gate, airline) {
+  if (gate.use_type === 'leased') return gate.leaseholder === airline;
+  return true;
+}
+
+function autoAssign(flightOps, rules) {
+  // flightOps: turns + RON entries from pairTurnsForDate
+  // Each gate has a sorted list of occupancy intervals.
+  const occupancy = new Map();
+  for (const g of rules.gates) occupancy.set(g.id, []);
+
+  const assignments = [];
+  const unassigned = [];
+  const buf = rules.globals.turn_buffer_min || 0;
+
+  // Sort by start time, RON-out first (already parked from start of window)
+  const ordered = [...flightOps].sort((a,b) => {
+    if (a.bar_start !== b.bar_start) return a.bar_start - b.bar_start;
+    const ord = { ron_out: 0, turn: 1, ron_in: 2 };
+    return (ord[a.type] || 1) - (ord[b.type] || 1);
+  });
+
+  for (const op of ordered) {
+    const airline = op.airline;
+    // Score candidate gates
+    const candidates = rules.gates
+      .filter(g => gateAcceptsEquip(g, op.equip, rules))
+      .filter(g => {
+        // leased gate: airline must match; common-use: open to all
+        if (g.use_type === 'leased' && g.leaseholder !== airline) return false;
+        return true;
+      })
+      .filter(g => {
+        const occ = occupancy.get(g.id);
+        for (const iv of occ) {
+          if (op.bar_start < iv.end + buf && op.bar_end > iv.start - buf) return false;
+        }
+        return true;
+      });
+
+    let pick = null;
+    if (candidates.length) {
+      // Prefer gates already used by this airline today (continuity)
+      candidates.sort((a,b) => {
+        const aUsedByMe = (occupancy.get(a.id) || []).some(iv => iv.airline === airline) ? 0 : 1;
+        const bUsedByMe = (occupancy.get(b.id) || []).some(iv => iv.airline === airline) ? 0 : 1;
+        if (aUsedByMe !== bUsedByMe) return aUsedByMe - bUsedByMe;
+        // Then prefer smaller (tighter fit)
+        return (SIZE_RANK[a.max_size]||2) - (SIZE_RANK[b.max_size]||2);
+      });
+      pick = candidates[0];
+    } else {
+      // Fall back: any active gate with capacity, even if leased to other airline
+      const fallback = rules.gates
+        .filter(g => gateAcceptsEquip(g, op.equip, rules))
+        .filter(g => {
+          const occ = occupancy.get(g.id);
+          for (const iv of occ) {
+            if (op.bar_start < iv.end + buf && op.bar_end > iv.start - buf) return false;
+          }
+          return true;
+        });
+      if (fallback.length) pick = fallback[0];
+    }
+
+    if (pick) {
+      occupancy.get(pick.id).push({ start: op.bar_start, end: op.bar_end, airline });
+      assignments.push({ ...op, gate: pick.id });
+    } else {
+      unassigned.push(op);
+    }
+  }
+  return { assignments, unassigned };
+}
+
+// =============================================================
+// Rendering
+// =============================================================
+function airlineColorVar(mktAl) {
+  const known = ['DL','AA','UA','WN','NK','G4','MX','SY'];
+  return known.includes(mktAl) ? mktAl : 'XX';
+}
+
+function rebuildPlan() {
+  if (!STATE.flights.length || !STATE.selectedDate) {
+    document.getElementById('gantt').style.display = 'none';
+    document.getElementById('gantt-empty').style.display = 'flex';
+    document.getElementById('needs-attention-wrap').innerHTML = '';
+    updateMetaAndSlots();
+    return;
+  }
+  document.getElementById('gantt-empty').style.display = 'none';
+  document.getElementById('gantt').style.display = 'grid';
+
+  const ops = buildOpsForDate(STATE.flights, STATE.selectedDate, STATE.rules);
+  const { assignments, unassigned } = autoAssign(ops, STATE.rules);
+  STATE.assignments = assignments;
+  STATE.unassigned = unassigned;
+  renderGantt();
+  renderNeedsAttention();
+  updateMetaAndSlots();
+  updateUnassignedTabCount();
+  if (STATE.view === 'manual') renderUnassigned();
+}
+
+function visibleGates() {
+  return STATE.rules.gates.filter(g =>
+    STATE.concourse === 'all' ? true : g.concourse === STATE.concourse
+  );
+}
+
+function visibleAssignments() {
+  return STATE.assignments.filter(a => {
+    if (STATE.concourse !== 'all') {
+      const g = STATE.rules.gates.find(g => g.id === a.gate);
+      if (!g || g.concourse !== STATE.concourse) return false;
+    }
+    if (STATE.filter === 'all') return true;
+    if (STATE.filter === 'ron') return a.type !== 'turn';
+    if (STATE.filter === 'turns') return a.type === 'turn';
+    if (STATE.filter === 'active') {
+      return a.bar_start <= STATE.cursorMin && a.bar_end >= STATE.cursorMin;
+    }
+    return true;
+  });
+}
+
+function renderGantt() {
+  const gantt = document.getElementById('gantt');
+  const gates = visibleGates();
+  const px = pxPerMin();
+  const totalW = totalPx();
+
+  let html = '';
+  // Left col header
+  html += `<div class="gate-col">`;
+  html += `  <div class="gate-header-cell">Gate</div>`;
+  for (const g of gates) {
+    const lease = g.use_type === 'leased'
+      ? `<span class="lease">${g.leaseholder || '—'}</span>`
+      : g.use_type === 'common-use' ? `<span class="common">COMMON</span>` : '';
+    const inactive = g.status !== 'active' ? 'inactive' : '';
+    html += `<div class="gate-cell ${inactive}">
+      <div class="gate-num">${g.id}</div>
+      <div class="gate-meta">
+        ${lease}
+        <span>${g.max_size}</span>
+        ${g.hardstand ? '<span style="color:var(--warn)">RMT</span>' : ''}
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Right col (time axis + rows)
+  html += `<div class="time-col" id="time-col" style="width:${totalW}px;">`;
+  html += `  <div class="time-header" style="width:${totalW}px;">`;
+  for (let m = GANTT_START_MIN; m < GANTT_END_MIN; m += 30) {
+    const hour = (m % 60) === 0;
+    const w = 30 * px;
+    const label = hour ? minToHHMM(m) : '';
+    html += `<div class="time-tick ${hour ? 'hour' : ''}" style="width:${w}px;">${label}</div>`;
+  }
+  html += `</div>`;
+
+  // Rows with bars
+  const assignments = visibleAssignments();
+  const byGate = new Map();
+  for (const a of assignments) {
+    if (!byGate.has(a.gate)) byGate.set(a.gate, []);
+    byGate.get(a.gate).push(a);
+  }
+
+  for (const g of gates) {
+    const rowBars = byGate.get(g.id) || [];
+    const inactive = g.status !== 'active' ? 'inactive' : '';
+    html += `<div class="row ${inactive}" data-gate="${g.id}" style="width:${totalW}px;background-image: repeating-linear-gradient(90deg, transparent, transparent ${60*px - 1}px, var(--border) ${60*px - 1}px, var(--border) ${60*px}px);">`;
+    for (const a of rowBars) {
+      const left = minToPx(Math.max(a.bar_start, GANTT_START_MIN));
+      const right = minToPx(Math.min(a.bar_end, GANTT_END_MIN));
+      const w = Math.max(20, right - left);
+      const cVar = airlineColorVar(a.airline);
+      const isRon = a.type !== 'turn';
+      const orphanCls = (isRon && a.paired === false) ? 'orphan' : '';
+      const conflictCls = a.conflict ? 'conflict' : '';
+      const cls = `bar ${isRon ? 'ron' : ''} ${orphanCls} ${conflictCls}`.trim();
+      const flightLabel = a.type === 'turn'
+        ? `${a.arr.flight} → ${a.dep.flight}`
+        : (a.type === 'ron_in' ? `RON ← ${a.arr.flight}` : `RON → ${a.dep.flight}`);
+      const route = a.type === 'turn'
+        ? `${a.arr.orig} • ${a.dep.dest}`
+        : a.type === 'ron_in'
+          ? `${a.arr.orig} → SDF`
+          : `SDF → ${a.dep.dest}`;
+      const linkIcon = (isRon && a.paired) ? '<span class="pair-link">⇌</span>' : '';
+      html += `<div class="${cls}"
+        data-bar-idx="${STATE.assignments.indexOf(a)}"
+        style="left:${left}px; width:${w}px;
+          background:var(--c-${cVar}-soft);
+          border-color:var(--c-${cVar});
+          color:var(--text);">
+        <div class="bar-line1" style="color:var(--c-${cVar})">${flightLabel}</div>
+        <div class="bar-line2">${a.equip} • ${route}</div>
+        ${linkIcon}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Cursor
+  const cursorLeft = minToPx(STATE.cursorMin);
+  if (STATE.cursorMin >= GANTT_START_MIN && STATE.cursorMin <= GANTT_END_MIN) {
+    html += `<div class="cursor-line" style="left:${cursorLeft}px;">
+      <div class="cursor-label" style="position:absolute;left:1px;top:-22px;">${minToHHMM(STATE.cursorMin)}</div>
+    </div>`;
+  }
+
+  html += `</div>`;
+  gantt.innerHTML = html;
+
+  // Update counts
+  const allByConc = STATE.assignments.reduce((acc, a) => {
+    const g = STATE.rules.gates.find(g => g.id === a.gate);
+    if (!g) return acc;
+    acc[g.concourse] = (acc[g.concourse] || 0) + 1;
+    return acc;
+  }, {});
+  document.getElementById('count-A').textContent = allByConc['A'] || 0;
+  document.getElementById('count-B').textContent = allByConc['B'] || 0;
+  document.getElementById('count-all').textContent = STATE.assignments.length;
+}
+
+function renderNeedsAttention() {
+  const wrap = document.getElementById('needs-attention-wrap');
+  if (!STATE.unassigned.length) { wrap.innerHTML = ''; return; }
+  const items = STATE.unassigned.slice(0, 10).map(op => {
+    const f = op.dep || op.arr;
+    const id = op.type === 'turn'
+      ? `${op.arr.flight} → ${op.dep.flight}`
+      : (op.type === 'ron_in' ? `RON ← ${op.arr.flight}` : `RON → ${op.dep.flight}`);
+    return `<div>• ${id} (${op.airline}/${op.equip}) — ${minToHHMM(op.bar_start)} to ${minToHHMM(op.bar_end)}</div>`;
+  }).join('');
+  const more = STATE.unassigned.length > 10 ? `<div style="margin-top:4px;opacity:0.7;">…and ${STATE.unassigned.length-10} more</div>` : '';
+  wrap.innerHTML = `<div class="needs-attention">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div class="ttl">Needs attention: ${STATE.unassigned.length} unassigned flight ops</div>
+      <button class="btn" id="auto-gate-btn" style="border-color:var(--danger);color:var(--danger);">Auto-Gate Unassigned Flights</button>
+    </div>
+    ${items}${more}
+  </div>`;
+  const btn = document.getElementById('auto-gate-btn');
+  if (btn) btn.addEventListener('click', autoGateUnassigned);
+}
+
+// Aggressive second-pass assignment: ignores leaseholder, compresses RON windows
+// to a 90-min footprint as last resort. Mutates STATE.assignments / STATE.unassigned.
+function autoGateUnassigned() {
+  if (!STATE.unassigned.length) return;
+  const RON_FOOTPRINT_MIN = 90;
+  const occupancy = new Map();
+  for (const g of STATE.rules.gates) occupancy.set(g.id, []);
+  for (const a of STATE.assignments) {
+    if (!occupancy.has(a.gate)) occupancy.set(a.gate, []);
+    occupancy.get(a.gate).push({ start: a.bar_start, end: a.bar_end });
+  }
+  const overlaps = (occ, s, e) => occ.some(iv => s < iv.end && e > iv.start);
+  const tryFit = (op, gates, s, e) => {
+    for (const g of gates) {
+      if (g.status !== 'active') continue;
+      if (!gateAcceptsEquip(g, op.equip, STATE.rules)) continue;
+      if (overlaps(occupancy.get(g.id), s, e)) continue;
+      return g;
+    }
+    return null;
+  };
+
+  const stillUnassigned = [];
+  let placed = 0, compressed = 0;
+  for (const op of STATE.unassigned) {
+    // Prefer leaseholder match first (in case rules changed since last run)
+    const leaseholderFirst = [...STATE.rules.gates].sort((a, b) => {
+      const aMatch = (a.use_type === 'leased' && a.leaseholder === op.airline) ? 0 : 1;
+      const bMatch = (b.use_type === 'leased' && b.leaseholder === op.airline) ? 0 : 1;
+      return aMatch - bMatch;
+    });
+
+    // Pass 1: original window, any compatible gate (ignore lease).
+    let pick = tryFit(op, leaseholderFirst, op.bar_start, op.bar_end);
+    let s = op.bar_start, e = op.bar_end;
+
+    // Pass 2: compress RON window to a 90-min footprint at the relevant edge.
+    if (!pick && op.type === 'ron_out' && op.dep && op.dep.depTime != null) {
+      e = op.dep.depTime; // already the bar_end, but ensure
+      s = Math.max(GANTT_START_MIN, e - RON_FOOTPRINT_MIN);
+      pick = tryFit(op, leaseholderFirst, s, e);
+      if (pick) compressed++;
+    } else if (!pick && op.type === 'ron_in' && op.arr && op.arr.arrTime != null) {
+      const arrSdf = op.arr.arrTime + (op.arr.arrFlag > 0 ? 1440 : 0);
+      s = arrSdf;
+      e = Math.min(GANTT_END_MIN, arrSdf + RON_FOOTPRINT_MIN);
+      pick = tryFit(op, leaseholderFirst, s, e);
+      if (pick) compressed++;
+    }
+
+    if (pick) {
+      occupancy.get(pick.id).push({ start: s, end: e });
+      STATE.assignments.push({ ...op, gate: pick.id, bar_start: s, bar_end: e });
+      placed++;
+    } else {
+      stillUnassigned.push(op);
+    }
+  }
+  // Keep gantt order stable.
+  STATE.assignments.sort((a, b) => a.bar_start - b.bar_start);
+  STATE.unassigned = stillUnassigned;
+  renderGantt();
+  renderNeedsAttention();
+  updateMetaAndSlots();
+  updateUnassignedTabCount();
+  if (STATE.view === 'manual') renderUnassigned();
+  console.info(`Auto-gate: placed ${placed} (compressed ${compressed}), remaining ${stillUnassigned.length}`);
+}
+
+// =============================================================
+// Scorecards (occupancy + open slots)
+// =============================================================
+function updateMetaAndSlots() {
+  // date / cursor display
+  document.getElementById('meta-date').textContent = STATE.selectedDate || '—';
+  document.getElementById('meta-cursor').textContent = minToHHMM(STATE.cursorMin);
+  document.getElementById('slots-cursor-label').textContent = (STATE.selectedDate || '—') + ' @ ' + minToHHMM(STATE.cursorMin);
+  document.getElementById('soon-horizon').textContent = STATE.rules.globals.opening_soon_horizon_min;
+  document.getElementById('meta-flights').textContent = STATE.assignments.length;
+
+  // occupancy at cursor
+  const t = STATE.cursorMin;
+  let occupied = 0, open = 0, inactive = 0;
+  const occupiedGates = new Set();
+  for (const a of STATE.assignments) {
+    if (a.bar_start <= t && a.bar_end > t) occupiedGates.add(a.gate);
+  }
+  for (const g of STATE.rules.gates) {
+    if (g.status !== 'active') { inactive++; continue; }
+    if (occupiedGates.has(g.id)) occupied++; else open++;
+  }
+  const activeTotal = occupied + open;
+  const util = activeTotal ? Math.round((occupied / activeTotal) * 100) : 0;
+  document.getElementById('meta-occupied').textContent = occupied;
+  document.getElementById('meta-open').textContent = open;
+  document.getElementById('meta-inactive').textContent = inactive;
+  document.getElementById('meta-util').textContent = util + '%';
+
+  // open-slots panels
+  const availList = document.getElementById('avail-list');
+  const soonList = document.getElementById('soon-list');
+  const horizon = STATE.rules.globals.opening_soon_horizon_min;
+  const availItems = [];
+  const soonItems = [];
+
+  for (const g of STATE.rules.gates) {
+    if (g.status !== 'active') continue;
+    const occ = STATE.assignments.filter(a => a.gate === g.id);
+    const currentlyOn = occ.find(a => a.bar_start <= t && a.bar_end > t);
+    if (currentlyOn) {
+      // gate occupied — does it free up within horizon?
+      const freesAt = currentlyOn.bar_end;
+      const untilFree = freesAt - t;
+      if (untilFree <= horizon) {
+        const nextOcc = occ.find(a => a.bar_start >= freesAt);
+        const windowEnd = nextOcc ? nextOcc.bar_start : GANTT_END_MIN;
+        const windowDur = windowEnd - freesAt;
+        const occupant = currentlyOn.airline + ' ' + (currentlyOn.dep?.flight || currentlyOn.arr?.flight || '');
+        soonItems.push({ id: g.id, untilFree, windowDur, occupant, lease: g.leaseholder, use_type: g.use_type });
+      }
+    } else {
+      // gate is open — how long has it been open and how long does it stay open?
+      const past = occ.filter(a => a.bar_end <= t);
+      const lastEnd = past.length ? Math.max(...past.map(a => a.bar_end)) : GANTT_START_MIN;
+      const openSince = t - lastEnd;
+      const future = occ.filter(a => a.bar_start > t);
+      const nextStart = future.length ? Math.min(...future.map(a => a.bar_start)) : GANTT_END_MIN;
+      const remaining = nextStart - t;
+      availItems.push({ id: g.id, openSince, remaining, nextStart, lease: g.leaseholder, use_type: g.use_type });
+    }
+  }
+
+  availItems.sort((a,b) => b.remaining - a.remaining);
+  soonItems.sort((a,b) => a.untilFree - b.untilFree);
+
+  document.getElementById('avail-count').textContent = availItems.length;
+  document.getElementById('soon-count').textContent = soonItems.length;
+
+  if (!availItems.length) {
+    availList.innerHTML = `<div class="empty-msg">No open gates at this time</div>`;
+  } else {
+    availList.innerHTML = availItems.map(s => `
+      <div class="slot">
+        <div class="g">${s.id} <span style="color:var(--text-muted);font-size:10px;">${s.use_type === 'leased' ? s.lease : 'COMMON'}</span></div>
+        <div class="d">Open for ${fmtDur(s.openSince)}, ${fmtDur(s.remaining)} until next</div>
+        <div class="occ">Next: ${s.nextStart < GANTT_END_MIN ? minToHHMM(s.nextStart) : '— (rest of day)'}</div>
+      </div>
+    `).join('');
+  }
+
+  if (!soonItems.length) {
+    soonList.innerHTML = `<div class="empty-msg">No gates freeing up in the next ${horizon} minutes</div>`;
+  } else {
+    soonList.innerHTML = soonItems.map(s => `
+      <div class="slot soon">
+        <div class="g">${s.id} <span style="color:var(--text-muted);font-size:10px;">${s.use_type === 'leased' ? s.lease : 'COMMON'}</span></div>
+        <div class="d">Free in ${fmtDur(s.untilFree)} • window ${fmtDur(s.windowDur)}</div>
+        <div class="occ">Now: ${s.occupant}</div>
+      </div>
+    `).join('');
+  }
+}
+
+// =============================================================
+// Tooltip
+// =============================================================
+const tooltip = document.getElementById('tooltip');
+function showTooltip(e, idx) {
+  const a = STATE.assignments[idx];
+  if (!a) return;
+  const f = a.dep || a.arr || a.arr_prev || a.dep_next;
+  const lines = [];
+  lines.push(`<div class="tt-head" style="color:var(--c-${airlineColorVar(a.airline)})">${a.airline} ${f?.flight || ''} · ${a.gate}</div>`);
+  if (a.type === 'turn') {
+    lines.push(`<div class="tt-row"><span>Arr</span><b>${a.arr.orig} ${minToHHMM(a.arr.arrTime)}</b></div>`);
+    lines.push(`<div class="tt-row"><span>Dep</span><b>${minToHHMM(a.dep.depTime)} → ${a.dep.dest}</b></div>`);
+    lines.push(`<div class="tt-row"><span>Ground</span><b>${fmtDur(a.bar_end - a.bar_start)}</b></div>`);
+  } else if (a.type === 'ron_in') {
+    lines.push(`<div class="tt-row"><span>Arrived from</span><b>${a.arr.orig} @ ${minToHHMM(a.arr.arrTime)}</b></div>`);
+    if (a.paired && a.dep_next) {
+      lines.push(`<div class="tt-row"><span>Departs tomorrow</span><b>${a.dep_next.opAl} ${a.dep_next.flight} @ ${minToHHMM(a.dep_next.depTime)} → ${a.dep_next.dest}</b></div>`);
+      lines.push(`<div class="tt-row"><span>Overnight</span><b>⇌ paired</b></div>`);
+    } else {
+      lines.push(`<div class="tt-row"><span>Overnight</span><b style="color:var(--danger)">orphan — no next-day pair</b></div>`);
+    }
+  } else { // ron_out
+    lines.push(`<div class="tt-row"><span>Departs to</span><b>${a.dep.dest} @ ${minToHHMM(a.dep.depTime)}</b></div>`);
+    if (a.paired && a.arr_prev) {
+      lines.push(`<div class="tt-row"><span>Arrived yesterday</span><b>${a.arr_prev.opAl} ${a.arr_prev.flight} from ${a.arr_prev.orig} @ ${minToHHMM(a.arr_prev.arrTime)}</b></div>`);
+      lines.push(`<div class="tt-row"><span>Overnight</span><b>⇌ paired</b></div>`);
+    } else {
+      lines.push(`<div class="tt-row"><span>Overnight</span><b style="color:var(--danger)">orphan — no prior-day pair</b></div>`);
+    }
+  }
+  lines.push(`<div class="tt-row"><span>Equip</span><b>${a.equip}${a.seats ? ` · ${a.seats} seats` : ''}</b></div>`);
+  lines.push(`<div class="tt-row"><span>Op</span><b>${a.op}</b></div>`);
+  tooltip.innerHTML = lines.join('');
+  tooltip.style.display = 'block';
+  moveTooltip(e);
+}
+function moveTooltip(e) {
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const r = tooltip.getBoundingClientRect();
+  if (x + r.width > window.innerWidth) x = e.clientX - r.width - pad;
+  if (y + r.height > window.innerHeight) y = e.clientY - r.height - pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTooltip() { tooltip.style.display = 'none'; }
+
+// =============================================================
+// Manual-assign tab
+// =============================================================
+function updateUnassignedTabCount() {
+  const el = document.getElementById('ut-count');
+  if (!el) return;
+  const n = STATE.unassigned.length;
+  el.textContent = n;
+  el.classList.toggle('has', n > 0);
+}
+
+function sizeOfEquip(eq) {
+  const e = String(eq || '').toUpperCase();
+  for (const [s, codes] of Object.entries(STATE.rules.size_classes)) {
+    if (codes.map(c => c.toUpperCase()).includes(e)) return s;
+  }
+  return 'narrowbody';
+}
+
+function buildOccupancyMap() {
+  const occ = new Map();
+  for (const g of STATE.rules.gates) occ.set(g.id, []);
+  for (const a of STATE.assignments) {
+    if (!occ.has(a.gate)) occ.set(a.gate, []);
+    occ.get(a.gate).push({
+      s: a.bar_start,
+      e: a.bar_end,
+      fl: a.dep?.flight || a.arr?.flight || a.arr_prev?.flight || a.dep_next?.flight || '?',
+      al: a.airline,
+    });
+  }
+  return occ;
+}
+
+function renderUnassigned() {
+  const wrap = document.getElementById('unassigned-list');
+  if (!STATE.unassigned.length) {
+    wrap.innerHTML = `<div class="unassigned-empty">
+      <div class="big">✓ All flight ops assigned</div>
+      <div>Switch to Gate Plan to review.</div>
+    </div>`;
+    return;
+  }
+  wrap.innerHTML = STATE.unassigned.map((op, idx) => {
+    const flightLabel = op.type === 'turn'
+      ? `${op.arr.flight} → ${op.dep.flight}`
+      : op.type === 'ron_in' ? `RON ← ${op.arr.flight}` : `RON → ${op.dep.flight}`;
+    const route = op.type === 'turn'
+      ? `${op.arr.orig} ↔ ${op.dep.dest}`
+      : op.type === 'ron_in' ? `${op.arr.orig} → SDF` : `SDF → ${op.dep.dest}`;
+    const cVar = airlineColorVar(op.airline);
+    return `<div class="unassigned-row" id="ua-row-${idx}">
+      <div class="unassigned-head" data-toggle="${idx}">
+        <div>
+          <div class="lbl">Flight</div>
+          <div style="color:var(--c-${cVar}); font-weight:700;">${flightLabel}</div>
+        </div>
+        <div>
+          <div class="lbl">Type</div>
+          <span class="badge-type ${op.type}">${op.type.replace('_','-')}</span>
+        </div>
+        <div>
+          <div class="lbl">Carrier · Eq</div>
+          <div>${op.airline} · ${op.equip}</div>
+        </div>
+        <div>
+          <div class="lbl">Route</div>
+          <div>${route}</div>
+        </div>
+        <div>
+          <div class="lbl">Window</div>
+          <div>${minToHHMM(op.bar_start)} → ${minToHHMM(op.bar_end)} <span style="color:var(--text-muted);">(${fmtDur(op.bar_end - op.bar_start)})</span></div>
+        </div>
+        <div class="chev">▾</div>
+      </div>
+      <div class="unassigned-body" id="ua-body-${idx}" style="display:none;"></div>
+    </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('[data-toggle]').forEach(el => {
+    el.addEventListener('click', () => toggleUnassignedRow(Number(el.dataset.toggle)));
+  });
+}
+
+function toggleUnassignedRow(idx) {
+  const row = document.getElementById('ua-row-' + idx);
+  const body = document.getElementById('ua-body-' + idx);
+  if (!row || !body) return;
+  if (body.style.display === 'none') {
+    renderGatePicker(idx, body);
+    body.style.display = 'block';
+    row.classList.add('open');
+  } else {
+    body.style.display = 'none';
+    row.classList.remove('open');
+  }
+}
+
+const SIZE_RANK_LOCAL = { regional: 1, narrowbody: 2, widebody: 3 };
+
+function renderGatePicker(opIdx, body) {
+  const op = STATE.unassigned[opIdx];
+  if (!op) return;
+  const occupancy = buildOccupancyMap();
+  const need = SIZE_RANK_LOCAL[sizeOfEquip(op.equip)] || 2;
+  const cards = STATE.rules.gates.map(g => {
+    const active = g.status === 'active';
+    const capOk = need <= (SIZE_RANK_LOCAL[g.max_size] || 2);
+    const compat = active && capOk;
+    const blockers = compat ? occupancy.get(g.id).filter(iv => op.bar_start < iv.e && op.bar_end > iv.s) : [];
+    const leaseMatch = g.use_type === 'common-use' || g.leaseholder === op.airline;
+    const preferred = compat && !blockers.length && leaseMatch;
+    const free = compat && !blockers.length;
+    return { g, compat, free, preferred, blockers, active, capOk };
+  });
+  cards.sort((a, b) => {
+    const s = (x) => x.preferred ? 0 : x.free ? 1 : x.compat ? 2 : 3;
+    return s(a) - s(b);
+  });
+
+  body.innerHTML = `
+    <div class="picker-legend">
+      <span class="key"><span class="swatch" style="background:var(--accent)"></span> Preferred (lease/common-use + free)</span>
+      <span class="key"><span class="swatch" style="background:var(--good)"></span> Free (other lease)</span>
+      <span class="key"><span class="swatch" style="background:var(--warn)"></span> Conflict (busy at this window)</span>
+      <span class="key"><span class="swatch" style="background:var(--text-muted)"></span> Incompatible</span>
+    </div>
+    <div class="gate-pick-grid">
+    ${cards.map(({ g, compat, free, preferred, blockers, active, capOk }) => {
+      const cls = !compat ? 'incompatible'
+                : preferred ? 'preferred'
+                : free ? 'free'
+                : 'conflict';
+      const lease = g.use_type === 'leased' ? g.leaseholder
+                   : g.use_type === 'common-use' ? 'COMMON'
+                   : g.use_type;
+      const why = !active ? 'gate inactive'
+                : !capOk ? `needs ${sizeOfEquip(op.equip)}, gate ${g.max_size}`
+                : '';
+      const note = blockers.length
+        ? `<div class="conflict-note">conflict with ${blockers.map(b => `${b.al} ${b.fl}`).join(', ')}</div>`
+        : why
+        ? `<div class="incompat-note">${why}</div>`
+        : '';
+      return `<button class="gate-pick ${cls}" data-op="${opIdx}" data-gate="${g.id}" ${!compat ? 'disabled' : ''}>
+        <div class="g">${g.id} <span class="tag">${lease}</span></div>
+        <div class="meta">${g.max_size} · ${g.concourse}${g.hardstand ? ' · RMT' : ''}</div>
+        ${note}
+      </button>`;
+    }).join('')}
+    </div>`;
+
+  body.querySelectorAll('.gate-pick:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = Number(btn.dataset.op);
+      const gateId = btn.dataset.gate;
+      const isConflict = btn.classList.contains('conflict');
+      if (isConflict && !confirm(`Gate ${gateId} has a time conflict with another flight in this window. Assign anyway?`)) return;
+      manualAssign(idx, gateId, isConflict);
+    });
+  });
+}
+
+// =============================================================
+// Drag-to-reassign on Gantt bars
+// =============================================================
+let DRAG = null;
+
+function onGanttMouseDown(e) {
+  const bar = e.target.closest('.bar');
+  if (!bar) return;
+  // Only left button
+  if (e.button !== 0) return;
+  const idx = Number(bar.dataset.barIdx);
+  if (!Number.isFinite(idx)) return;
+  const op = STATE.assignments[idx];
+  if (!op) return;
+  DRAG = {
+    opIdx: idx,
+    startX: e.clientX,
+    startY: e.clientY,
+    barEl: bar,
+    fromGate: op.gate,
+    active: false,
+  };
+  e.preventDefault();
+}
+
+function onGanttMouseMove(e) {
+  if (!DRAG) return;
+  const dx = e.clientX - DRAG.startX;
+  const dy = e.clientY - DRAG.startY;
+  if (!DRAG.active && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+  if (!DRAG.active) {
+    DRAG.active = true;
+    DRAG.barEl.classList.add('dragging');
+    document.body.classList.add('dragging-bar');
+    hideTooltip();
+  }
+  // Find the row under the cursor (must be a Gantt .row, not the gate-col cell)
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const row = el?.closest('.row');
+  // Clear previous highlights
+  document.querySelectorAll('.row.drop-target').forEach(r => {
+    r.classList.remove('drop-target');
+    r.classList.remove('invalid');
+  });
+  if (!row) return;
+  const op = STATE.assignments[DRAG.opIdx];
+  const newGateId = row.dataset.gate;
+  if (!newGateId || !op) return;
+  const gate = STATE.rules.gates.find(g => g.id === newGateId);
+  const valid = gate && reassignIsCompatible(op, gate);
+  row.classList.add('drop-target');
+  if (!valid) row.classList.add('invalid');
+}
+
+function onGanttMouseUp(e) {
+  if (!DRAG) return;
+  const wasActive = DRAG.active;
+  const idx = DRAG.opIdx;
+  const fromGate = DRAG.fromGate;
+  // Clean up visuals
+  DRAG.barEl.classList.remove('dragging');
+  document.body.classList.remove('dragging-bar');
+  document.querySelectorAll('.row.drop-target').forEach(r => {
+    r.classList.remove('drop-target');
+    r.classList.remove('invalid');
+  });
+  DRAG = null;
+  if (!wasActive) return; // it was a click, do nothing
+  // Find drop target
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const row = el?.closest('.row');
+  if (!row) return;
+  const newGate = row.dataset.gate;
+  if (!newGate || newGate === fromGate) return;
+  attemptReassign(idx, newGate);
+}
+
+function reassignIsCompatible(op, gate) {
+  if (gate.status !== 'active') return false;
+  const need = SIZE_RANK_LOCAL[sizeOfEquip(op.equip)] || 2;
+  const cap  = SIZE_RANK_LOCAL[gate.max_size] || 2;
+  return need <= cap;
+}
+
+function attemptReassign(opIdx, newGateId) {
+  const op = STATE.assignments[opIdx];
+  if (!op) return;
+  const gate = STATE.rules.gates.find(g => g.id === newGateId);
+  if (!gate) return;
+  if (gate.status !== 'active') {
+    alert(`Gate ${newGateId} is ${gate.status} — cannot assign.`);
+    return;
+  }
+  const need = SIZE_RANK_LOCAL[sizeOfEquip(op.equip)] || 2;
+  if (need > (SIZE_RANK_LOCAL[gate.max_size] || 2)) {
+    alert(`Gate ${newGateId} (${gate.max_size}) is too small for ${op.equip} — needs ${sizeOfEquip(op.equip)}.`);
+    return;
+  }
+  // Conflict check
+  const blockers = STATE.assignments.filter((a, i) =>
+    i !== opIdx && a.gate === newGateId &&
+    op.bar_start < a.bar_end && op.bar_end > a.bar_start
+  );
+  let isConflict = false;
+  if (blockers.length) {
+    const labels = blockers.map(a => `${a.airline} ${a.dep?.flight || a.arr?.flight || a.arr_prev?.flight || a.dep_next?.flight || '?'}`).join(', ');
+    if (!confirm(`Gate ${newGateId} has a conflict with ${labels} in this window. Move anyway?`)) return;
+    isConflict = true;
+  }
+  op.gate = newGateId;
+  op.conflict = isConflict;
+  STATE.assignments.sort((a, b) => a.bar_start - b.bar_start);
+  renderGantt();
+  renderNeedsAttention();
+  updateMetaAndSlots();
+}
+
+function manualAssign(opIdx, gateId, isConflict) {
+  const op = STATE.unassigned[opIdx];
+  if (!op) return;
+  STATE.assignments.push({ ...op, gate: gateId, conflict: !!isConflict });
+  STATE.unassigned.splice(opIdx, 1);
+  STATE.assignments.sort((a, b) => a.bar_start - b.bar_start);
+  renderGantt();
+  renderNeedsAttention();
+  updateMetaAndSlots();
+  renderUnassigned();
+  updateUnassignedTabCount();
+}
+
+// =============================================================
+// Rules editor
+// =============================================================
+function renderRules() {
+  // globals
+  const gg = document.getElementById('globals-grid');
+  const fields = [
+    { key: 'min_ground_time_min', label: 'Min ground time (min)' },
+    { key: 'turn_buffer_min', label: 'Turn buffer (min)' },
+    { key: 'opening_soon_horizon_min', label: 'Opening-soon horizon (min)' },
+    { key: 'max_turn_gap_min', label: 'Max turn gap (min)' },
+  ];
+  gg.innerHTML = fields.map(f => `
+    <div class="global-field">
+      <label>${f.label}</label>
+      <input type="number" min="0" data-global="${f.key}" value="${STATE.rules.globals[f.key]}">
+    </div>
+  `).join('');
+  gg.querySelectorAll('input[data-global]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      STATE.rules.globals[inp.dataset.global] = Number(inp.value);
+    });
+  });
+
+  // gates table
+  const tbl = document.getElementById('gates-table');
+  tbl.innerHTML = `
+    <thead><tr>
+      <th>Gate</th><th>Concourse</th><th>Status</th><th>Use type</th>
+      <th>Leaseholder</th><th>Max size</th><th>Jet bridge</th><th>Hardstand</th><th>Notes</th><th></th>
+    </tr></thead>
+    <tbody>
+    ${STATE.rules.gates.map((g, idx) => `
+      <tr data-idx="${idx}">
+        <td><input data-f="id" value="${g.id}"></td>
+        <td><select data-f="concourse"><option ${g.concourse==='A'?'selected':''}>A</option><option ${g.concourse==='B'?'selected':''}>B</option></select></td>
+        <td><select data-f="status">
+          <option ${g.status==='active'?'selected':''}>active</option>
+          <option ${g.status==='inactive'?'selected':''}>inactive</option>
+          <option ${g.status==='maintenance'?'selected':''}>maintenance</option>
+        </select></td>
+        <td><select data-f="use_type">
+          <option value="leased" ${g.use_type==='leased'?'selected':''}>leased</option>
+          <option value="common-use" ${g.use_type==='common-use'?'selected':''}>common-use</option>
+          <option value="preferential" ${g.use_type==='preferential'?'selected':''}>preferential</option>
+        </select></td>
+        <td><input data-f="leaseholder" value="${g.leaseholder||''}" placeholder="—" style="width:60px;"></td>
+        <td><select data-f="max_size">
+          <option ${g.max_size==='regional'?'selected':''}>regional</option>
+          <option ${g.max_size==='narrowbody'?'selected':''}>narrowbody</option>
+          <option ${g.max_size==='widebody'?'selected':''}>widebody</option>
+        </select></td>
+        <td><input type="checkbox" data-f="jet_bridge" ${g.jet_bridge?'checked':''}></td>
+        <td><input type="checkbox" data-f="hardstand" ${g.hardstand?'checked':''}></td>
+        <td><input data-f="notes" value="${(g.notes||'').replace(/"/g,'&quot;')}"></td>
+        <td><button class="btn danger" data-action="del">✕</button></td>
+      </tr>
+    `).join('')}
+    </tbody>`;
+
+  tbl.querySelectorAll('tbody tr').forEach(tr => {
+    const idx = Number(tr.dataset.idx);
+    tr.querySelectorAll('[data-f]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const f = inp.dataset.f;
+        let v;
+        if (inp.type === 'checkbox') v = inp.checked;
+        else v = inp.value;
+        STATE.rules.gates[idx][f] = (f === 'leaseholder' && v === '') ? null : v;
+      });
+    });
+    tr.querySelector('[data-action="del"]').addEventListener('click', () => {
+      STATE.rules.gates.splice(idx, 1);
+      renderRules();
+    });
+  });
+}
+
+// =============================================================
+// Event wiring
+// =============================================================
+function setView(v) {
+  STATE.view = v;
+  document.getElementById('view-plan').style.display = (v === 'plan' ? 'block' : 'none');
+  document.getElementById('view-manual').style.display = (v === 'manual' ? 'block' : 'none');
+  document.getElementById('view-rules').style.display = (v === 'rules' ? 'block' : 'none');
+  document.querySelectorAll('.view-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === v);
+  });
+  if (v === 'rules') renderRules();
+  if (v === 'manual') renderUnassigned();
+}
+
+function setDate(d) {
+  STATE.selectedDate = d;
+  document.getElementById('date-input').value = d || '';
+  rebuildPlan();
+}
+
+function clampToAvailable(dateStr) {
+  if (!STATE.availableDates.length) return null;
+  if (STATE.availableDates.includes(dateStr)) return dateStr;
+  // nearest available
+  const target = Date.parse(dateStr);
+  let best = STATE.availableDates[0], bestDiff = Infinity;
+  for (const d of STATE.availableDates) {
+    const diff = Math.abs(Date.parse(d) - target);
+    if (diff < bestDiff) { bestDiff = diff; best = d; }
+  }
+  return best;
+}
+
+function wireEvents() {
+  // view tabs
+  document.querySelectorAll('.view-tab').forEach(b => {
+    b.addEventListener('click', () => setView(b.dataset.view));
+  });
+
+  // concourse tabs
+  document.querySelectorAll('.ctab').forEach(b => {
+    b.addEventListener('click', () => {
+      STATE.concourse = b.dataset.concourse;
+      document.querySelectorAll('.ctab').forEach(x => x.classList.toggle('active', x === b));
+      renderGantt();
+    });
+  });
+
+  // zoom
+  document.querySelectorAll('[data-zoom]').forEach(b => {
+    b.addEventListener('click', () => {
+      STATE.zoom = parseFloat(b.dataset.zoom);
+      document.querySelectorAll('[data-zoom]').forEach(x => x.classList.toggle('active', x === b));
+      renderGantt();
+    });
+  });
+
+  // filter
+  document.querySelectorAll('[data-filter]').forEach(b => {
+    b.addEventListener('click', () => {
+      STATE.filter = b.dataset.filter;
+      document.querySelectorAll('[data-filter]').forEach(x => x.classList.toggle('active', x === b));
+      renderGantt();
+    });
+  });
+
+  // date
+  document.getElementById('date-input').addEventListener('change', e => {
+    if (!e.target.value) return;
+    const d = clampToAvailable(e.target.value) || e.target.value;
+    setDate(d);
+  });
+  document.getElementById('date-today').addEventListener('click', () => {
+    const todayIso = new Date().toISOString().slice(0,10);
+    const d = clampToAvailable(todayIso);
+    if (d) setDate(d);
+  });
+  document.getElementById('date-prev').addEventListener('click', () => stepDate(-1));
+  document.getElementById('date-next').addEventListener('click', () => stepDate(+1));
+
+  // cursor
+  const slider = document.getElementById('cursor-slider');
+  const ctime = document.getElementById('cursor-time');
+  slider.addEventListener('input', () => {
+    STATE.cursorMin = GANTT_START_MIN + parseInt(slider.value, 10);
+    ctime.value = minToHHMM(STATE.cursorMin);
+    renderGantt();
+    updateMetaAndSlots();
+  });
+  ctime.addEventListener('change', () => {
+    const [hh, mm] = ctime.value.split(':').map(Number);
+    let m = hh*60 + mm;
+    // if before 04:30, treat as next-day
+    if (m < GANTT_START_MIN) m += 1440;
+    STATE.cursorMin = Math.max(GANTT_START_MIN, Math.min(GANTT_END_MIN, m));
+    slider.value = STATE.cursorMin - GANTT_START_MIN;
+    renderGantt();
+    updateMetaAndSlots();
+  });
+  document.getElementById('cursor-now').addEventListener('click', () => {
+    const now = new Date();
+    let m = now.getHours()*60 + now.getMinutes();
+    if (m < GANTT_START_MIN) m += 1440;
+    STATE.cursorMin = Math.max(GANTT_START_MIN, Math.min(GANTT_END_MIN, m));
+    slider.value = STATE.cursorMin - GANTT_START_MIN;
+    ctime.value = minToHHMM(STATE.cursorMin);
+    renderGantt();
+    updateMetaAndSlots();
+  });
+
+  // file input
+  document.getElementById('file-input').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    document.getElementById('file-name').textContent = f.name;
+    try {
+      const { flights, dates } = await loadDiioFile(f);
+      STATE.flights = flights;
+      STATE.availableDates = dates;
+      // bound date input
+      const di = document.getElementById('date-input');
+      di.min = dates[0]; di.max = dates[dates.length - 1];
+      // pick today if in range, otherwise first available
+      const today = new Date().toISOString().slice(0,10);
+      const initial = dates.includes(today) ? today : dates[0];
+      setDate(initial);
+    } catch (err) {
+      alert('Failed to parse Diio file: ' + err.message);
+      console.error(err);
+    }
+  });
+
+  // Gantt bar hover/click + drag-to-reassign
+  const gantt = document.getElementById('gantt');
+  gantt.addEventListener('mouseover', e => {
+    if (DRAG && DRAG.active) return;
+    const bar = e.target.closest('.bar');
+    if (!bar) return;
+    showTooltip(e, Number(bar.dataset.barIdx));
+  });
+  gantt.addEventListener('mousemove', e => {
+    if (tooltip.style.display === 'block' && !(DRAG && DRAG.active)) moveTooltip(e);
+  });
+  gantt.addEventListener('mouseout', e => {
+    if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('.bar')) hideTooltip();
+  });
+  gantt.addEventListener('mousedown', onGanttMouseDown);
+  // Mousemove/up listeners on window so drag still works if cursor leaves the gantt
+  window.addEventListener('mousemove', onGanttMouseMove);
+  window.addEventListener('mouseup', onGanttMouseUp);
+
+  // rules actions
+  document.getElementById('rules-save').addEventListener('click', () => {
+    saveRules(STATE.rules);
+    const m = document.getElementById('rules-save-msg');
+    m.textContent = 'Saved · auto-assigner re-run';
+    setTimeout(() => m.textContent = '', 2500);
+    rebuildPlan();
+  });
+  document.getElementById('rules-reset').addEventListener('click', () => {
+    if (!confirm('Reset all gate rules to defaults?')) return;
+    STATE.rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
+    saveRules(STATE.rules);
+    renderRules();
+    rebuildPlan();
+  });
+  document.getElementById('rules-export').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(STATE.rules, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'sdf_gate_rules.json';
+    a.click();
+  });
+  document.getElementById('rules-import').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const text = await f.text();
+    try {
+      const imported = JSON.parse(text);
+      if (!imported.gates || !imported.globals) throw new Error('Missing gates/globals');
+      STATE.rules = imported;
+      saveRules(STATE.rules);
+      renderRules();
+      rebuildPlan();
+    } catch (err) {
+      alert('Bad rules JSON: ' + err.message);
+    }
+  });
+  document.getElementById('rules-add').addEventListener('click', () => {
+    STATE.rules.gates.push({
+      id: 'NEW', concourse: 'A', status: 'active',
+      use_type: 'common-use', leaseholder: null,
+      max_size: 'narrowbody', jet_bridge: true, hardstand: false, notes: '',
+    });
+    renderRules();
+  });
+}
+
+function stepDate(delta) {
+  if (!STATE.availableDates.length) return;
+  const i = STATE.availableDates.indexOf(STATE.selectedDate);
+  const j = i < 0 ? 0 : Math.max(0, Math.min(STATE.availableDates.length - 1, i + delta));
+  setDate(STATE.availableDates[j]);
+}
+
+// =============================================================
+// Boot
+// =============================================================
+(async function init() {
+  await loadDefaultRules();
+  STATE.rules = loadRules();
+  // sync cursor controls to default
+  document.getElementById('cursor-slider').value = STATE.cursorMin - GANTT_START_MIN;
+  document.getElementById('cursor-time').value = minToHHMM(STATE.cursorMin);
+  wireEvents();
+  setView('plan');
+  updateMetaAndSlots();
+})();
+</script>
+
+</body>
+</html>

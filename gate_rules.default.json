@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "globals": {
+    "min_ground_time_min": 35,
+    "turn_buffer_min": 5,
+    "opening_soon_horizon_min": 60,
+    "max_turn_gap_min": 240
+  },
+  "carriers": [
+    { "code": "DL", "name": "Delta Air Lines",     "operators": ["DAL", "RPA", "EDV", "SKW", "ENY"] },
+    { "code": "AA", "name": "American Airlines",   "operators": ["AAL", "RPA", "ENY", "SKW", "PDT", "OH", "MQ"] },
+    { "code": "UA", "name": "United Airlines",     "operators": ["UAL", "SKW", "RPA", "ASH", "GJS"] },
+    { "code": "WN", "name": "Southwest Airlines",  "operators": ["SWA"] },
+    { "code": "NK", "name": "Spirit Airlines",     "operators": ["NKS"] },
+    { "code": "G4", "name": "Allegiant Air",       "operators": ["AAY"] },
+    { "code": "MX", "name": "Breeze Airways",      "operators": ["MXY"] },
+    { "code": "SY", "name": "Sun Country Airlines","operators": ["SCX"] }
+  ],
+  "size_classes": {
+    "regional":   ["E145","CRJ2","CR2","CRJ5","CR5","CRJ7","CR7","CRJ9","CR9","E170","E70","E175","E75","E7W"],
+    "narrowbody": ["A319","319","A320","320","A321","321","A21N","A223","B712","717","B737","737","B738","738","B739","739","B38M","7M8","B39M","7M9","7S8","7S7"],
+    "widebody":   ["B752","757","B763","767","A332","332","A333","333","A359","359","B772","777","B788","788","B789","789","B78X","78X"]
+  },
+  "gates": [
+    { "id": "A1",   "concourse": "A", "status": "active", "use_type": "leased",      "leaseholder": "DL", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A3",   "concourse": "A", "status": "active", "use_type": "leased",      "leaseholder": "DL", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A4",   "concourse": "A", "status": "active", "use_type": "leased",      "leaseholder": "DL", "max_size": "regional",   "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A5",   "concourse": "A", "status": "active", "use_type": "leased",      "leaseholder": "DL", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A6",   "concourse": "A", "status": "active", "use_type": "leased",      "leaseholder": "NK", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A8",   "concourse": "A", "status": "active", "use_type": "common-use",  "leaseholder": null, "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A9",   "concourse": "A", "status": "active", "use_type": "leased",      "leaseholder": "UA", "max_size": "regional",   "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A10",  "concourse": "A", "status": "active", "use_type": "leased",      "leaseholder": "G4", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A11",  "concourse": "A", "status": "active", "use_type": "leased",      "leaseholder": "UA", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A12",  "concourse": "A", "status": "active", "use_type": "common-use",  "leaseholder": null, "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A14",  "concourse": "A", "status": "active", "use_type": "leased",      "leaseholder": "UA", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "A15",  "concourse": "A", "status": "active", "use_type": "leased",      "leaseholder": "UA", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+
+    { "id": "B2",   "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "AA", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B4",   "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "AA", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B5",   "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "AA", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B6",   "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "AA", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B9",   "concourse": "B", "status": "active", "use_type": "common-use",  "leaseholder": null, "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "Shared MX / WN" },
+    { "id": "B11",  "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "WN", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B15",  "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "WN", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B16",  "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "AA", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B16A", "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "AA", "max_size": "regional",   "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B17",  "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "WN", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B18",  "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "AA", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B18A", "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "AA", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" },
+    { "id": "B19",  "concourse": "B", "status": "active", "use_type": "leased",      "leaseholder": "WN", "max_size": "narrowbody", "jet_bridge": true,  "hardstand": false, "notes": "" }
+  ]
+}

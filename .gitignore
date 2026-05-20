@@ -1,0 +1,16 @@
+# Operational data — never commit
+*.xlsx
+*.xls
+*.csv
+
+# Screenshots / scratch
+ARRIVALS*.png
+arrivals*.png
+*.tmp
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/

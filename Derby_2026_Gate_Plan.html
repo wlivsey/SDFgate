@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+<title>SDF Derby 2026 — Gate Plan</title>
+<style>
+  /* === Type & Theme === */
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  
+  :root {
+    --bg: #0a0e14;
+    --bg-elevated: #11161f;
+    --bg-row: #0d1219;
+    --bg-row-alt: #0f1520;
+    --border: #1c2433;
+    --border-strong: #2a3447;
+    --text: #e6edf3;
+    --text-dim: #7d8590;
+    --text-muted: #5a6373;
+    --accent: #ffb000;     /* amber - operational */
+    --accent-soft: rgba(255, 176, 0, 0.12);
+    --now: #ff5252;
+    --good: #3fb950;
+    --warn: #f0883e;
+    --danger: #f85149;
+    
+    /* Airline colors - using brand-recognizable hues but tuned for dark UI */
+    --c-delta: #c8102e;        /* DAL widow red */
+    --c-delta-soft: rgba(200, 16, 46, 0.18);
+    --c-united: #1d4f91;       /* UAL blue */
+    --c-united-soft: rgba(29, 79, 145, 0.25);
+    --c-american: #0078d2;     /* AAL blue */
+    --c-american-soft: rgba(0, 120, 210, 0.22);
+    --c-southwest: #f9b612;    /* WN yellow (different concourse than UAL) */
+    --c-southwest-soft: rgba(249, 182, 18, 0.18);
+    --c-spirit: #ffeb00;       /* NK yellow */
+    --c-spirit-soft: rgba(255, 235, 0, 0.16);
+    --c-allegiant: #ff7900;    /* G4 orange */
+    --c-allegiant-soft: rgba(255, 121, 0, 0.18);
+    --c-suncountry: #d61f2c;   /* SY red */
+    --c-suncountry-soft: rgba(214, 31, 44, 0.18);
+    --c-breeze: #4dbeff;       /* MX cyan */
+    --c-breeze-soft: rgba(77, 190, 255, 0.18);
+    --c-reserved: #5a6373;
+    --c-reserved-soft: rgba(90, 99, 115, 0.14);
+  }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  /* === Top Bar === */
+  .topbar {
+    background: linear-gradient(180deg, #11161f 0%, #0a0e14 100%);
+    border-bottom: 1px solid var(--border-strong);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(8px);
+  }
+  
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  
+  .brand-mark {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+  
+  .brand-mark::before {
+    content: "▣";
+    margin-right: 6px;
+    color: var(--accent);
+  }
+  
+  .brand-sub {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+  
+  .topbar-meta {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  
+  .topbar-meta .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  
+  .topbar-meta .stat-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  
+  .topbar-meta .stat-val {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  
+  .topbar-meta .stat-val.live {
+    color: var(--accent);
+  }
+  
+  /* === Controls Bar === */
+  .controls {
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    position: sticky;
+    top: 51px;
+    z-index: 40;
+  }
+  
+  .control-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  
+  .control-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-right: 4px;
+    font-weight: 600;
+  }
+  
+  .btn {
+    background: var(--bg-row);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .btn:hover {
+    background: var(--border);
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
+  
+  .btn.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  
+  .btn.danger {
+    color: var(--danger);
+  }
+  
+  .btn.danger.active {
+    background: rgba(248, 81, 73, 0.15);
+    border-color: var(--danger);
+  }
+  
+  .search-input {
+    background: var(--bg-row);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    width: 200px;
+    border-radius: 3px;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--bg);
+  }
+  
+  .search-input::placeholder {
+    color: var(--text-muted);
+  }
+  
+  /* === Concourse Selector === */
+  .concourse-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--bg-elevated);
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .tab {
+    padding: 12px 24px;
+    background: transparent;
+    color: var(--text-dim);
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.15s ease;
+  }
+  
+  .tab:hover {
+    color: var(--text);
+  }
+  
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  
+  .tab .count {
+    margin-left: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  
+  /* === Gantt Container === */
+  .gantt-wrap {
+    overflow-x: auto;
+    overflow-y: visible;
+    background: var(--bg);
+    position: relative;
+  }
+  
+  .gantt {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-width: max-content;
+  }
+  
+  /* Gate column (left, sticky) */
+  .gate-col {
+    position: sticky;
+    left: 0;
+    background: var(--bg-elevated);
+    border-right: 1px solid var(--border-strong);
+    z-index: 10;
+  }
+  
+  .gate-header-cell {
+    height: 56px;
+    border-bottom: 2px solid var(--border-strong);
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+    z-index: 11;
+  }
+  
+  .gate-cell {
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-elevated);
+  }
+  
+  .gate-cell.dimmed { opacity: 0.4; }
+  
+  .gate-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    min-width: 44px;
+  }
+  
+  .gate-airlines {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    flex: 1;
+  }
+  
+  .airline-chip {
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  
+  .gate-stats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1.2;
+  }
+  
+  .gate-stats .num { color: var(--text-dim); font-weight: 600; }
+  
+  /* === Timeline (right) === */
+  .timeline-col { position: relative; }
+  
+  .time-header {
+    height: 56px;
+    background: var(--bg-elevated);
+    border-bottom: 2px solid var(--border-strong);
+    position: sticky;
+    top: 0;
+    z-index: 9;
+    overflow: hidden;
+  }
+  
+  .time-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 1px solid var(--border);
+    padding: 8px 0 0 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    user-select: none;
+  }
+  
+  .time-tick.major {
+    border-left-color: var(--border-strong);
+    color: var(--text-dim);
+  }
+  
+  .time-tick.major .label { 
+    font-weight: 700; 
+    font-size: 11px; 
+    color: var(--text);
+  }
+  
+  .time-tick .sublabel {
+    display: block;
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  
+  .timeline-rows {
+    position: relative;
+  }
+  
+  .gate-row {
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    background: var(--bg-row);
+  }
+  
+  .gate-row:nth-child(even) { background: var(--bg-row-alt); }
+  
+  .gate-row.dimmed { opacity: 0.35; }
+  
+  /* Hour grid lines */
+  .grid-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 1px solid var(--border);
+    pointer-events: none;
+  }
+  
+  .grid-line.major { border-left-color: var(--border-strong); }
+  
+  /* Now indicator */
+  .now-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--now);
+    z-index: 5;
+    box-shadow: 0 0 8px rgba(255, 82, 82, 0.6);
+    pointer-events: none;
+  }
+  
+  .now-line::before {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    width: 10px;
+    height: 10px;
+    background: var(--now);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--now);
+  }
+  
+  .now-label {
+    position: absolute;
+    top: -22px;
+    left: 6px;
+    background: var(--now);
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  
+  /* === Flight Bars === */
+  .flight-bar {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    border-left: 3px solid;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.15s ease;
+    min-width: 18px;
+  }
+  
+  .flight-bar:hover {
+    transform: scale(1.02);
+    z-index: 4;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    border-left-width: 4px;
+  }
+  
+  .flight-bar.dimmed { opacity: 0.18; }
+  .flight-bar.highlighted { box-shadow: 0 0 0 2px var(--accent), 0 0 16px rgba(255,176,0,0.4); z-index: 6; }
+  
+  .flight-bar.delta { background: var(--c-delta-soft); border-left-color: var(--c-delta); color: #ffd6dc; }
+  .flight-bar.united { background: var(--c-united-soft); border-left-color: var(--c-united); color: #c8d8f0; }
+  .flight-bar.american { background: var(--c-american-soft); border-left-color: var(--c-american); color: #c0e2ff; }
+  .flight-bar.southwest { background: var(--c-southwest-soft); border-left-color: var(--c-southwest); color: #ffe9a8; }
+  .flight-bar.spirit { background: var(--c-spirit-soft); border-left-color: var(--c-spirit); color: #fff8b8; }
+  .flight-bar.allegiant { background: var(--c-allegiant-soft); border-left-color: var(--c-allegiant); color: #ffd4b3; }
+  .flight-bar.suncountry { background: var(--c-suncountry-soft); border-left-color: var(--c-suncountry); color: #ffc8cd; }
+  .flight-bar.breeze { background: var(--c-breeze-soft); border-left-color: var(--c-breeze); color: #c8e8ff; }
+  
+  .flight-bar.ron::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 6px,
+      rgba(255,255,255,0.04) 6px,
+      rgba(255,255,255,0.04) 12px
+    );
+    pointer-events: none;
+  }
+  
+  .bar-content {
+    padding: 4px 8px;
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.2;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .bar-line1 {
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  }
+  
+  .bar-line2 {
+    font-size: 9px;
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+  
+  .bar-tag {
+    font-size: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(0,0,0,0.4);
+    padding: 1px 4px;
+    border-radius: 2px;
+    align-self: flex-start;
+  }
+  
+  /* === Tooltip === */
+  .tooltip {
+    position: fixed;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    padding: 0;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.7);
+    z-index: 100;
+    min-width: 280px;
+    max-width: 340px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+    font-size: 12px;
+  }
+  
+  .tooltip.visible { opacity: 1; }
+  
+  .tooltip-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .tooltip-airline {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+  
+  .tooltip-gate {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  
+  .tooltip-route {
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--bg-row);
+  }
+  
+  .tooltip-airport {
+    text-align: center;
+    flex: 1;
+  }
+  
+  .tooltip-airport .code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  
+  .tooltip-airport .label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 4px;
+  }
+  
+  .tooltip-airport .time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  
+  .tooltip-arrow {
+    color: var(--text-muted);
+    font-size: 18px;
+  }
+  
+  .tooltip-details {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+  }
+  
+  .tooltip-detail {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .tooltip-detail .k {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  
+  .tooltip-detail .v {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 2px;
+  }
+  
+  .tooltip-detail .v.muted { color: var(--text-dim); font-weight: 500; }
+  
+  /* === Modal Detail Panel === */
+  .panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(2px);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  
+  .panel-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  .panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 480px;
+    max-width: 100vw;
+    background: var(--bg-elevated);
+    border-left: 1px solid var(--border-strong);
+    z-index: 201;
+    transform: translateX(100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .panel.visible { transform: translateX(0); }
+  
+  .panel-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .panel-head h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  
+  .panel-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 3px;
+    line-height: 1;
+  }
+  
+  .panel-close:hover { background: var(--border); color: var(--text); }
+  
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  
+  .panel-airline-banner {
+    padding: 14px 16px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border-left: 4px solid;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  
+  .panel-airline-banner .name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+  
+  .panel-airline-banner .iata {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    margin-top: 2px;
+    opacity: 0.85;
+  }
+  
+  .panel-route-viz {
+    background: var(--bg-row);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .panel-route-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  
+  .panel-route-stop {
+    text-align: center;
+  }
+  
+  .panel-route-stop .code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  
+  .panel-route-stop .label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 6px;
+  }
+  
+  .panel-route-stop .time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  
+  .panel-route-conn {
+    flex: 1;
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text-muted);
+  }
+  
+  .panel-route-conn .line {
+    width: 100%;
+    height: 1px;
+    background: var(--border-strong);
+    position: relative;
+  }
+  
+  .panel-route-conn .line::after {
+    content: "▶";
+    position: absolute;
+    right: -2px;
+    top: -7px;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+  
+  .panel-route-conn .turn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin-top: 8px;
+    font-weight: 600;
+    background: var(--accent-soft);
+    padding: 3px 10px;
+    border-radius: 99px;
+  }
+  
+  .panel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .panel-stat {
+    background: var(--bg-row);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+  }
+  
+  .panel-stat .k {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 4px;
+  }
+  
+  .panel-stat .v {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  
+  .panel-section-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  
+  /* === Legend === */
+  .legend {
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    font-size: 11px;
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+  }
+  
+  .legend-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.1s;
+  }
+  
+  .legend-item:hover { opacity: 0.7; }
+  
+  .legend-item.disabled { opacity: 0.3; }
+  
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    border-left: 3px solid;
+  }
+  
+  .legend-swatch.delta { background: var(--c-delta-soft); border-left-color: var(--c-delta); }
+  .legend-swatch.united { background: var(--c-united-soft); border-left-color: var(--c-united); }
+  .legend-swatch.american { background: var(--c-american-soft); border-left-color: var(--c-american); }
+  .legend-swatch.southwest { background: var(--c-southwest-soft); border-left-color: var(--c-southwest); }
+  .legend-swatch.spirit { background: var(--c-spirit-soft); border-left-color: var(--c-spirit); }
+  .legend-swatch.allegiant { background: var(--c-allegiant-soft); border-left-color: var(--c-allegiant); }
+  .legend-swatch.breeze { background: var(--c-breeze-soft); border-left-color: var(--c-breeze); }
+  .legend-swatch.ron {
+    background: var(--c-reserved-soft);
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.08) 3px, rgba(255,255,255,0.08) 6px);
+    border-left-color: var(--text-dim);
+  }
+  
+  .legend-name {
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+  }
+  
+  .legend-count {
+    color: var(--text-muted);
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  /* === Empty state === */
+  .empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  
+  /* Scrollbar */
+  ::-webkit-scrollbar { height: 12px; width: 12px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  
+  /* Print */
+  @media print {
+    .topbar, .controls, .concourse-tabs, .legend { display: none; }
+    .gantt-wrap { overflow: visible; }
+    body { background: white; color: black; }
+  }
+  
+  /* Responsive: smaller screens */
+  @media (max-width: 900px) {
+    .gantt { grid-template-columns: 180px 1fr; }
+    .gate-num { font-size: 16px; min-width: 36px; }
+    .topbar-meta .stat-label { display: none; }
+    .panel { width: 100vw; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">SDF/KSDF</div>
+    <div class="brand-sub">Derby 2026 · Gate Plan</div>
+  </div>
+  <div class="topbar-meta">
+    <div class="stat">
+      <div class="stat-label">Now</div>
+      <div class="stat-val live" id="now-display">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Active</div>
+      <div class="stat-val" id="active-count">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total Movements</div>
+      <div class="stat-val" id="total-count">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="control-group">
+    <span class="control-label">Time</span>
+    <button class="btn" id="jump-now">Now</button>
+    <button class="btn" id="jump-am">AM Peak</button>
+    <button class="btn" id="jump-pm">PM Peak</button>
+    <button class="btn" id="jump-eve">Evening</button>
+  </div>
+  <div class="control-group">
+    <span class="control-label">Zoom</span>
+    <button class="btn" data-zoom="0.6">60%</button>
+    <button class="btn active" data-zoom="1">100%</button>
+    <button class="btn" data-zoom="1.5">150%</button>
+    <button class="btn" data-zoom="2.5">250%</button>
+  </div>
+  <div class="control-group">
+    <span class="control-label">Show</span>
+    <button class="btn active" id="show-all">All</button>
+    <button class="btn" id="show-active">Active Now</button>
+    <button class="btn" id="show-ron">RON Only</button>
+    <button class="btn" id="show-turns">Turns Only</button>
+  </div>
+  <div class="control-group" style="margin-left:auto;">
+    <input type="text" class="search-input" id="search" placeholder="Search flight, dest, gate…">
+  </div>
+</div>
+
+<!-- CONCOURSE TABS -->
+<div class="concourse-tabs">
+  <button class="tab active" data-concourse="a">Concourse A <span class="count" id="count-a"></span></button>
+  <button class="tab" data-concourse="b">Concourse B <span class="count" id="count-b"></span></button>
+  <button class="tab" data-concourse="all">Both <span class="count" id="count-all"></span></button>
+</div>
+
+<!-- GANTT -->
+<div class="gantt-wrap" id="gantt-wrap">
+  <div class="gantt" id="gantt"></div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend" id="legend">
+  <span class="legend-label">Filter Airlines</span>
+</div>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- DETAIL PANEL -->
+<div class="panel-overlay" id="panel-overlay"></div>
+<aside class="panel" id="panel">
+  <div class="panel-head">
+    <h2>Flight Detail</h2>
+    <button class="panel-close" id="panel-close">×</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</aside>
+
+<script>
+// ============================================================
+// SDF Derby Gate Plan — Interactive Gantt
+// ============================================================
+
+const FLIGHT_DATA = {"concourse_a": [{"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "x", "dep_flight": "DAL2407", "aircraft": "B738", "origin": "X", "dest": "ATL", "seats": "160 seats", "arr_time": null, "dep_time": "600 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 90, "type": "ron_in"}, {"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "x", "dep_flight": "RPA5824", "aircraft": "E175", "origin": "X", "dest": "DTW", "seats": "76 seats", "arr_time": null, "dep_time": "756 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 206, "type": "ron_in"}, {"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "RPA5871", "dep_flight": "RPA5871", "aircraft": "E175", "origin": "LGA", "dest": "LGA", "seats": "76 seats", "arr_time": "825 EDT", "dep_time": "915 EDT", "turn": "0 hr 50 min", "bar_start": 235, "bar_end": 285, "type": "turn"}, {"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "EDV5550", "dep_flight": "EDV5550", "aircraft": "CRJ9", "origin": "RDU", "dest": "RDU", "seats": "76 seats", "arr_time": "946 EDT", "dep_time": "1026 EDT", "turn": "0 hr 40 min", "bar_start": 316, "bar_end": 356, "type": "turn"}, {"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "SKW4567", "dep_flight": "SKW4567", "aircraft": "E175", "origin": "AUS", "dest": "AUS", "seats": "76 seats", "arr_time": "1105 EDT", "dep_time": "1145 EDT", "turn": "0 hr 40 min", "bar_start": 395, "bar_end": 435, "type": "turn"}, {"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "DAL1481", "dep_flight": "DAL1481", "aircraft": "B738", "origin": "ATL", "dest": "ATL", "seats": "160 seats", "arr_time": "1205 EDT", "dep_time": "1302 EDT", "turn": "0 hr 57 min", "bar_start": 455, "bar_end": 512, "type": "turn"}, {"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "RPA5637", "dep_flight": "RPA5637", "aircraft": "E175", "origin": "LGA", "dest": "LGA", "seats": "76 seats", "arr_time": "1331 EDT", "dep_time": "1416 EDT", "turn": "0 hr 45 min", "bar_start": 541, "bar_end": 586, "type": "turn"}, {"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "DAL8804", "dep_flight": "DAL8804", "aircraft": "A320", "origin": "ATL", "dest": "ATL", "seats": "157 seats", "arr_time": "1531 EDT", "dep_time": "1636 EDT", "turn": "1 hr 5 min", "bar_start": 661, "bar_end": 726, "type": "turn"}, {"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "SKW3957", "dep_flight": "SKW3957", "aircraft": "CRJ9", "origin": "DTW", "dest": "DTW", "seats": "76 seats", "arr_time": "1727 EDT", "dep_time": "1808 EDT", "turn": "0 hr 41 min", "bar_start": 777, "bar_end": 818, "type": "turn"}, {"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "SKW4094", "dep_flight": "SKW4094", "aircraft": "CRJ9", "origin": "MSP", "dest": "MSP", "seats": "76 seats", "arr_time": "1844 EDT", "dep_time": "1925 EDT", "turn": "0 hr 41 min", "bar_start": 854, "bar_end": 895, "type": "turn"}, {"gate": "A1", "airline": "Delta Air Lines", "arr_flight": "DAL2624", "dep_flight": "X", "aircraft": "B738", "origin": "ATL", "dest": "X", "seats": "160 seats", "arr_time": null, "dep_time": "2359 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1169, "type": "ron_in"}, {"gate": "A3", "airline": "Delta Air Lines", "arr_flight": "x", "dep_flight": "DAL1610", "aircraft": "B739", "origin": "X", "dest": "ATL", "seats": "190 seats", "arr_time": null, "dep_time": "705 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 155, "type": "ron_in"}, {"gate": "A3", "airline": "Delta Air Lines", "arr_flight": "x", "dep_flight": "DAL2299", "aircraft": "B739", "origin": "X", "dest": "ATL", "seats": "180 seats", "arr_time": null, "dep_time": "810 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 220, "type": "ron_in"}, {"gate": "A3", "airline": "Delta Air Lines", "arr_flight": "DAL1374", "dep_flight": "DAL1374", "aircraft": "B712", "origin": "ATL", "dest": "ATL", "seats": "110 seats", "arr_time": "852 EDT", "dep_time": "938 EDT", "turn": "0 hr 46 min", "bar_start": 262, "bar_end": 308, "type": "turn"}, {"gate": "A3", "airline": "Delta Air Lines", "arr_flight": "DAL1507", "dep_flight": "DAL2801", "aircraft": "B738", "origin": "ATL", "dest": "ATL", "seats": "180 seats", "arr_time": "951 EDT", "dep_time": "1056 EDT", "turn": "1 hr 10 min", "bar_start": 321, "bar_end": 386, "type": "turn"}, {"gate": "A3", "airline": "Delta Air Lines", "arr_flight": "DAL8819", "dep_flight": "DAL2801", "aircraft": "B739", "origin": "ATL", "dest": "ATL", "seats": "180 seats", "arr_time": "1105 EDT", "dep_time": "1210 EDT", "turn": "1 hr 5 min", "bar_start": 395, "bar_end": 460, "type": "turn"}, {"gate": "A3", "airline": "Delta Air Lines", "arr_flight": "DAL8795", "dep_flight": "DAL8795", "aircraft": "B739", "origin": "ATL", "dest": "ATL", "seats": "180 seats", "arr_time": "1311 EDT", "dep_time": "1416 EDT", "turn": "1 hr 5 min", "bar_start": 521, "bar_end": 586, "type": "turn"}, {"gate": "A3", "airline": "Delta Air Lines", "arr_flight": "DAL8803", "dep_flight": "DAL8803", "aircraft": "B739", "origin": "LAX", "dest": "LAX", "seats": "180 seats", "arr_time": "1522 EDT", "dep_time": "1635 EDT", "turn": "1 hr 13 min", "bar_start": 652, "bar_end": 725, "type": "turn"}, {"gate": "A3", "airline": "Delta Air Lines", "arr_flight": "DAL8788", "dep_flight": "DAL8788", "aircraft": "B739", "origin": "ATL", "dest": "ATL", "seats": "180 seats", "arr_time": "1740 EDT", "dep_time": "1845 EDT", "turn": "1 hr 5 min", "bar_start": 790, "bar_end": 855, "type": "turn"}, {"gate": "A3", "airline": "Delta Air Lines", "arr_flight": "DAL2831", "dep_flight": "DAL2831", "aircraft": "B712", "origin": "ATL", "dest": "ATL", "seats": "76 seats", "arr_time": "1907 EDT", "dep_time": "1954 EDT", "turn": "0 hr 47 min", "bar_start": 877, "bar_end": 924, "type": "turn"}, {"gate": "A3", "airline": "Delta Air Lines", "arr_flight": "DAL3093", "dep_flight": "X", "aircraft": "B739", "origin": "ATL", "dest": "X", "seats": "180 seats", "arr_time": null, "dep_time": "2039 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 969, "type": "ron_in"}, {"gate": "A5", "airline": "Delta Air Lines", "arr_flight": "x", "dep_flight": "DAL8801", "aircraft": "A319", "origin": "X", "dest": "SLC", "seats": "132 seats", "arr_time": null, "dep_time": "733 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 183, "type": "ron_in"}, {"gate": "A5", "airline": "Delta Air Lines", "arr_flight": "DAL8787", "dep_flight": "DAL8787", "aircraft": "A319", "origin": "BOS", "dest": "BOS", "seats": "132 seats", "arr_time": "951 EDT", "dep_time": "1056 EDT", "turn": "1 hr 10 min", "bar_start": 321, "bar_end": 386, "type": "turn"}, {"gate": "A5", "airline": "Delta Air Lines", "arr_flight": "DAL2130", "dep_flight": "DAL2130", "aircraft": "A319", "origin": "DTW", "dest": "DTW", "seats": "132 seats", "arr_time": "1147 EDT", "dep_time": "1247 EDT", "turn": "1 hr 0 min", "bar_start": 437, "bar_end": 497, "type": "turn"}, {"gate": "A5", "airline": "Delta Air Lines", "arr_flight": "RPA5615", "dep_flight": "RPA5615", "aircraft": "E175", "origin": "BOS", "dest": "BOS", "seats": "76 seats", "arr_time": "1320 EDT", "dep_time": "1400 EDT", "turn": "0 hr 40 min", "bar_start": 530, "bar_end": 570, "type": "turn"}, {"gate": "A5", "airline": "Delta Air Lines", "arr_flight": "DAL3195", "dep_flight": "DAL3195", "aircraft": "B712", "origin": "ATL", "dest": "ATL", "seats": "110 seats", "arr_time": "1430 EDT", "dep_time": "1516 EDT", "turn": "0 hr 46 min", "bar_start": 600, "bar_end": 646, "type": "turn"}, {"gate": "A5", "airline": "Delta Air Lines", "arr_flight": "DAL1126", "dep_flight": "DAL1126", "aircraft": "B738", "origin": "ATL", "dest": "ATL", "seats": "160 seats", "arr_time": "1647 EDT", "dep_time": "1743 EDT", "turn": "0 hr 56 min", "bar_start": 737, "bar_end": 793, "type": "turn"}, {"gate": "A5", "airline": "Delta Air Lines", "arr_flight": "RPA5832", "dep_flight": "X", "aircraft": "E175", "origin": "DTW", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2120 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1010, "type": "ron_in"}, {"gate": "A5", "airline": "Delta Air Lines", "arr_flight": "DAL2842", "dep_flight": "X", "aircraft": "B739", "origin": "ATL", "dest": "X", "seats": "180 seats", "arr_time": null, "dep_time": "2250 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1100, "type": "ron_in"}, {"gate": "A9", "airline": "United Airlines", "arr_flight": "x", "dep_flight": "RPA3422", "aircraft": "E175", "origin": "X", "dest": "ORD", "seats": "76 seats", "arr_time": null, "dep_time": "715 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 165, "type": "ron_in"}, {"gate": "A9", "airline": "United Airlines", "arr_flight": "x", "dep_flight": "RPA3682", "aircraft": "E175", "origin": "X", "dest": "EWR", "seats": "76 seats", "arr_time": null, "dep_time": "845 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 255, "type": "ron_in"}, {"gate": "A9", "airline": "United Airlines", "arr_flight": "SKW5249", "dep_flight": "SKW5526", "aircraft": "CRJ5", "origin": "ORD", "dest": "ORD", "seats": "50 seats", "arr_time": "1454 EDT", "dep_time": "1536 EDT", "turn": "0 hr 42 min", "bar_start": 624, "bar_end": 666, "type": "turn"}, {"gate": "A9", "airline": "United Airlines", "arr_flight": "ASH4063", "dep_flight": "x", "aircraft": "E175", "origin": "IAD", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "1942 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 912, "type": "ron_in"}, {"gate": "A9", "airline": "United Airlines", "arr_flight": "RPA3714", "dep_flight": "x", "aircraft": "E175", "origin": "EWR", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2222 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1072, "type": "ron_in"}, {"gate": "A9", "airline": "United Airlines", "arr_flight": "RPA3566", "dep_flight": "x", "aircraft": "E175", "origin": "IAD", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2359 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1169, "type": "ron_in"}, {"gate": "A11", "airline": "United Airlines", "arr_flight": "x", "dep_flight": "ASH6266", "aircraft": "E175", "origin": "X", "dest": "IAH", "seats": "76 seats", "arr_time": null, "dep_time": "600 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 90, "type": "ron_in"}, {"gate": "A11", "airline": "United Airlines", "arr_flight": "x", "dep_flight": "ASH6326", "aircraft": "E170", "origin": "X", "dest": "IAH", "seats": "70 seats", "arr_time": null, "dep_time": "915 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 285, "type": "ron_in"}, {"gate": "A11", "airline": "United Airlines", "arr_flight": "UAL1165", "dep_flight": "UAL1344", "aircraft": "B39M", "origin": "IAH", "dest": "IAH", "seats": "179 seats", "arr_time": "1037 EDT", "dep_time": "1205 EDT", "turn": "1 hr 28 min", "bar_start": 367, "bar_end": 455, "type": "turn"}, {"gate": "A11", "airline": "United Airlines", "arr_flight": "UAL1935", "dep_flight": "UAL425", "aircraft": "B738", "origin": "ORD", "dest": "ORD", "seats": "166 seats", "arr_time": "1317 EDT", "dep_time": "1419 EDT", "turn": "1 hr 2 min", "bar_start": 527, "bar_end": 589, "type": "turn"}, {"gate": "A11", "airline": "United Airlines", "arr_flight": "UAL1479", "dep_flight": "UAL1510", "aircraft": "B38M", "origin": "DEN", "dest": "DEN", "seats": "166 seats", "arr_time": "1430 EDT", "dep_time": "1534 EDT", "turn": "1 hr 4 min", "bar_start": 600, "bar_end": 664, "type": "turn"}, {"gate": "A11", "airline": "United Airlines", "arr_flight": "RPA3412", "dep_flight": "x", "aircraft": "E175", "origin": "EWR", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "1954 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 924, "type": "ron_in"}, {"gate": "A11", "airline": "United Airlines", "arr_flight": "RPA3551", "dep_flight": "x", "aircraft": "E175", "origin": "ORD", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2230 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1080, "type": "ron_in"}, {"gate": "A15", "airline": "United Airlines", "arr_flight": "x", "dep_flight": "RPA3640", "aircraft": "E175", "origin": "X", "dest": "IAD", "seats": "76 seats", "arr_time": null, "dep_time": "550 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 80, "type": "ron_in"}, {"gate": "A15", "airline": "United Airlines", "arr_flight": "UAL1225", "dep_flight": "UAL457", "aircraft": "B39M", "origin": "LAX", "dest": "LAX", "seats": "179 seats", "arr_time": "635 EDT", "dep_time": "900 EDT", "turn": "2 hr 25 min", "bar_start": 125, "bar_end": 270, "type": "turn"}, {"gate": "A15", "airline": "United Airlines", "arr_flight": "UAL1030", "dep_flight": "UAL2221", "aircraft": "B38M", "origin": "ORD", "dest": "ORD", "seats": "166 seats", "arr_time": "937 EDT", "dep_time": "1045 EDT", "turn": "1 hr 7 min", "bar_start": 307, "bar_end": 375, "type": "turn"}, {"gate": "A15", "airline": "United Airlines", "arr_flight": "UAL425", "dep_flight": "UAL1030", "aircraft": "B739", "origin": "DEN", "dest": "DEN", "seats": "179 seats", "arr_time": "1130 EDT", "dep_time": "1305 EDT", "turn": "1 hr 35 min", "bar_start": 420, "bar_end": 515, "type": "turn"}, {"gate": "A15", "airline": "United Airlines", "arr_flight": "UAL592", "dep_flight": "UAL555", "aircraft": "B38M", "origin": "EWR", "dest": "EWR", "seats": "166 seats", "arr_time": "1420 EDT", "dep_time": "1605 EDT", "turn": "1 hr 45 min", "bar_start": 590, "bar_end": 695, "type": "turn"}, {"gate": "A15", "airline": "United Airlines", "arr_flight": "UAL704", "dep_flight": "UAL592", "aircraft": "B738", "origin": "ORD", "dest": "ORD", "seats": "166 seats", "arr_time": "1657 EDT", "dep_time": "1759 EDT", "turn": "1 hr 46 min", "bar_start": 747, "bar_end": 809, "type": "turn"}, {"gate": "A15", "airline": "United Airlines", "arr_flight": "RPA3598", "dep_flight": "x", "aircraft": "E175", "origin": "ORD", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2017 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 947, "type": "ron_in"}, {"gate": "A15", "airline": "United Airlines", "arr_flight": "RPA3410", "dep_flight": "x", "aircraft": "E175", "origin": "ORD", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2356 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1166, "type": "ron_in"}, {"gate": "A14", "airline": "United Airlines", "arr_flight": "x", "dep_flight": "RPA3546", "aircraft": "E175", "origin": "X", "dest": "ORD", "seats": "76 seats", "arr_time": null, "dep_time": "540 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 70, "type": "ron_in"}, {"gate": "A14", "airline": "United Airlines", "arr_flight": "UAL1127", "dep_flight": "UAL2626", "aircraft": "B39M", "origin": "SFO", "dest": "SFO", "seats": "179 seats", "arr_time": "616 EDT", "dep_time": "1030 EDT", "turn": "4 hr 14 min", "bar_start": 106, "bar_end": 360, "type": "turn"}, {"gate": "A14", "airline": "United Airlines", "arr_flight": "UAL2260", "dep_flight": "UAL2337", "aircraft": "B739", "origin": "IAH", "dest": "IAD", "seats": "179 seats", "arr_time": "1152 EDT", "dep_time": "1430 EDT", "turn": "2 hr 38 min", "bar_start": 442, "bar_end": 600, "type": "turn"}, {"gate": "A14", "airline": "United Airlines", "arr_flight": "UAL1574", "dep_flight": "UAL1237", "aircraft": "B38M", "origin": "EWR", "dest": "EWR", "seats": "166 seats", "arr_time": "1614 EDT", "dep_time": "1800 EDT", "turn": "1 hr 46 min", "bar_start": 704, "bar_end": 810, "type": "turn"}, {"gate": "A14", "airline": "United Airlines", "arr_flight": "ASH4050", "dep_flight": "x", "aircraft": "E175", "origin": "IAH", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2000 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 930, "type": "ron_in"}, {"gate": "A14", "airline": "United Airlines", "arr_flight": "ASH4052", "dep_flight": "x", "aircraft": "E175", "origin": "IAH", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2159 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1049, "type": "ron_in"}, {"gate": "A12", "airline": "United Airlines", "arr_flight": "x", "dep_flight": "RPA3594", "aircraft": "E175", "origin": "X", "dest": "EWR", "seats": "76 seats", "arr_time": null, "dep_time": "617 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 107, "type": "ron_in"}, {"gate": "A12", "airline": "United Airlines", "arr_flight": "x", "dep_flight": "UAL501", "aircraft": "B739", "origin": "X", "dest": "DEN", "seats": "179 seats", "arr_time": null, "dep_time": "900 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 270, "type": "ron_in"}, {"gate": "A12", "airline": "Allegiant Air", "arr_flight": "G42883", "dep_flight": "G42893", "aircraft": "B38M", "origin": "SFB", "dest": "SDB", "seats": "190 seats", "arr_time": "1033 EDT", "dep_time": "1123 EDT", "turn": "0 hr 50 min", "bar_start": 363, "bar_end": 413, "type": "turn"}, {"gate": "A12", "airline": "United Airlines", "arr_flight": "UAL1858", "dep_flight": "UAL1654", "aircraft": "B739", "origin": "IAD", "dest": "IAH", "seats": "179 seats", "arr_time": "1429 EDT", "dep_time": "1535 EDT", "turn": "1 hr 7 min", "bar_start": 599, "bar_end": 665, "type": "turn"}, {"gate": "A12", "airline": "United Airlines", "arr_flight": "UAL1909", "dep_flight": "UAL1574", "aircraft": "B738", "origin": "ORD", "dest": "ORD", "seats": "166 seats", "arr_time": "1832 EDT", "dep_time": "1934 EDT", "turn": "1 hr 2 min", "bar_start": 842, "bar_end": 904, "type": "turn"}, {"gate": "A12", "airline": "United Airlines", "arr_flight": "UAL514", "dep_flight": "x", "aircraft": "A319", "origin": "DEN", "dest": "X", "seats": "126 seats", "arr_time": null, "dep_time": "2231 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1081, "type": "ron_in"}, {"gate": "A10", "airline": "Allegiant Air", "arr_flight": "G4952", "dep_flight": "G42487", "aircraft": "A320", "origin": "PGD", "dest": "PGD", "seats": "180 seats", "arr_time": "1018 EDT", "dep_time": "1108 EDT", "turn": "0 hr 50 min", "bar_start": 348, "bar_end": 398, "type": "turn"}, {"gate": "A10", "airline": "Allegiant Air", "arr_flight": "G43100", "dep_flight": "G43106", "aircraft": "A319", "origin": "VPS", "dest": "VPS", "seats": "156 seats", "arr_time": "1523 EDT", "dep_time": "1613 EDT", "turn": "0 hr 50 min", "bar_start": 653, "bar_end": 703, "type": "turn"}, {"gate": "A10", "airline": "Allegiant Air", "arr_flight": "G42636", "dep_flight": "G42639", "aircraft": "B38M", "origin": "PIE", "dest": "PIE", "seats": "190 seats", "arr_time": "2024 EDT", "dep_time": "2114 EDT", "turn": "0 hr 50 min", "bar_start": 954, "bar_end": 1004, "type": "turn"}, {"gate": "A8", "airline": "Delta Air Lines", "arr_flight": "x", "dep_flight": "RPA5652", "aircraft": "E175", "origin": "X", "dest": "LGA", "seats": "76 seats", "arr_time": null, "dep_time": "604 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 94, "type": "ron_in"}, {"gate": "A8", "airline": "United Airlines", "arr_flight": "x", "dep_flight": "RPA3552", "aircraft": "E175", "origin": "X", "dest": "ORD", "seats": "76 seats", "arr_time": null, "dep_time": "910 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 280, "type": "ron_in"}, {"gate": "A8", "airline": "Delta Air Lines", "arr_flight": "RPA5643", "dep_flight": "RPA5643", "aircraft": "E175", "origin": "LGA", "dest": "LGA", "seats": "76 seats", "arr_time": "1046 EDT", "dep_time": "1126 EDT", "turn": "0 hr 40 min", "bar_start": 376, "bar_end": 416, "type": "turn"}, {"gate": "A8", "airline": "Delta Air Lines", "arr_flight": "DAL8812", "dep_flight": "DAL8812", "aircraft": "A319", "origin": "JFK", "dest": "JFK", "seats": "132 seats", "arr_time": "1205 EDT", "dep_time": "1300 EDT", "turn": "0 hr 55 min", "bar_start": 455, "bar_end": 510, "type": "turn"}, {"gate": "A8", "airline": "United Airlines", "arr_flight": "SKW5926", "dep_flight": "SKW5906", "aircraft": "CRJ5", "origin": "ORD", "dest": "ORD", "seats": "50 seats", "arr_time": "1407 EDT", "dep_time": "1455 EDT", "turn": "0 hr 48 min", "bar_start": 577, "bar_end": 625, "type": "turn"}, {"gate": "A8", "airline": "Delta Air Lines", "arr_flight": "SKW3978", "dep_flight": "SKW3978", "aircraft": "E175", "origin": "MSP", "dest": "MSP", "seats": "76 seats", "arr_time": "1601 EDT", "dep_time": "1642 EDT", "turn": "0 hr 44 min", "bar_start": 691, "bar_end": 732, "type": "turn"}, {"gate": "A8", "airline": "Delta Air Lines", "arr_flight": "SKW4040", "dep_flight": "X", "aircraft": "E175", "origin": "MSP", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2248 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1098, "type": "ron_in"}, {"gate": "A6", "airline": "Spirit Airlines", "arr_flight": "NKS1860", "dep_flight": "NKS1861", "aircraft": "A320", "origin": "EWR", "dest": "EWR", "seats": "176 seats", "arr_time": "1045 EDT", "dep_time": "1140 EDT", "turn": "0 hr 55 min", "bar_start": 375, "bar_end": 430, "type": "turn"}, {"gate": "A6", "airline": "Spirit Airlines", "arr_flight": "NKS2544", "dep_flight": "NKS2545", "aircraft": "A320", "origin": "MCO", "dest": "MCO", "seats": "176 seats", "arr_time": "1331 EDT", "dep_time": "1427 EDT", "turn": "0 hr 56 min", "bar_start": 541, "bar_end": 597, "type": "turn"}, {"gate": "A6", "airline": "Spirit Airlines", "arr_flight": "NKS2256", "dep_flight": "NKS2066", "aircraft": "A320", "origin": "FLL", "dest": "FLL", "seats": "176 seats", "arr_time": "1704 EDT", "dep_time": "1806 EDT", "turn": "1 hr 2 min", "bar_start": 754, "bar_end": 816, "type": "turn"}, {"gate": "A4", "airline": "Delta Air Lines", "arr_flight": "x", "dep_flight": "SKW3938", "aircraft": "E175", "origin": "X", "dest": "MSP", "seats": "76 seats", "arr_time": null, "dep_time": "604 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 94, "type": "ron_in"}, {"gate": "A4", "airline": "Delta Air Lines", "arr_flight": "SKW3821", "dep_flight": "SKW3821", "aircraft": "CRJ9", "origin": "DTW", "dest": "DTW", "seats": "76 seats", "arr_time": "1005 EDT", "dep_time": "1045 EDT", "turn": "0 hr 40 min", "bar_start": 335, "bar_end": 375, "type": "turn"}, {"gate": "A4", "airline": "Delta Air Lines", "arr_flight": "SKW4539", "dep_flight": "SKW4539", "aircraft": "E175", "origin": "MSP", "dest": "MSP", "seats": "76 seats", "arr_time": "1118 EDT", "dep_time": "1158 EDT", "turn": "0 hr 40 min", "bar_start": 408, "bar_end": 448, "type": "turn"}, {"gate": "A4", "airline": "Delta Air Lines", "arr_flight": "SKW3923", "dep_flight": "SKW3923", "aircraft": "E175", "origin": "MSP", "dest": "MSP", "seats": "76 seats", "arr_time": "1301 EDT", "dep_time": "1345 EDT", "turn": "0 hr 44 min", "bar_start": 511, "bar_end": 555, "type": "turn"}, {"gate": "A4", "airline": "Delta Air Lines", "arr_flight": "EDV4954", "dep_flight": "EDV4954", "aircraft": "CRJ9", "origin": "LGA", "dest": "LGA", "seats": "76 seats", "arr_time": "1627 EDT", "dep_time": "1711 EDT", "turn": "0 hr 44 min", "bar_start": 717, "bar_end": 761, "type": "turn"}, {"gate": "A4", "airline": "Delta Air Lines", "arr_flight": "RPA5636", "dep_flight": "X", "aircraft": "E175", "origin": "LGA", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2143 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1033, "type": "ron_in"}], "concourse_b": [{"gate": "B2", "airline": "American Airlines", "arr_flight": "x", "dep_flight": "AAL1325", "aircraft": "B738", "origin": "X", "dest": "MIA", "seats": "172 seats", "arr_time": null, "dep_time": "606 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 96, "type": "ron_in"}, {"gate": "B2", "airline": "American Airlines", "arr_flight": "RPA4400", "dep_flight": "RPA4368", "aircraft": "E175", "origin": "PIT", "dest": "PIT", "seats": "76 seats", "arr_time": "814 EDT", "dep_time": "845 EDT", "turn": "0 hr 31 min", "bar_start": 224, "bar_end": 255, "type": "turn"}, {"gate": "B2", "airline": "American Airlines", "arr_flight": "AAL2789", "dep_flight": "AAL3100", "aircraft": "B738", "origin": "MIA", "dest": "LAS", "seats": "172 seats", "arr_time": "945 EDT", "dep_time": "1035 EDT", "turn": "0 hr 50 min", "bar_start": 315, "bar_end": 365, "type": "turn"}, {"gate": "B2", "airline": "American Airlines", "arr_flight": "AAL855", "dep_flight": "AAL834", "aircraft": "B738", "origin": "MIA", "dest": "MIA", "seats": "172 seats", "arr_time": "1117 EDT", "dep_time": "1207 EDT", "turn": "0 hr 50 min", "bar_start": 407, "bar_end": 457, "type": "turn"}, {"gate": "B2", "airline": "American Airlines", "arr_flight": "AAL550", "dep_flight": "AAL580", "aircraft": "A321", "origin": "DFW", "dest": "DFW", "seats": "190 seats", "arr_time": "1314 EDT", "dep_time": "1404 EDT", "turn": "0 hr 50 min", "bar_start": 524, "bar_end": 574, "type": "turn"}, {"gate": "B2", "airline": "American Airlines", "arr_flight": "AAL959", "dep_flight": "AAL941", "aircraft": "A321", "origin": "DFW", "dest": "DFW", "seats": "190 seats", "arr_time": "1443 EDT", "dep_time": "1533 EDT", "turn": "0 hr 50 min", "bar_start": 613, "bar_end": 663, "type": "turn"}, {"gate": "B2", "airline": "American Airlines", "arr_flight": "AAL2762", "dep_flight": "AAL2762", "aircraft": "B738", "origin": "DFW", "dest": "DFW", "seats": "172 seats", "arr_time": "1647 EDT", "dep_time": "1741 EDT", "turn": "0 hr 54 min", "bar_start": 737, "bar_end": 791, "type": "turn"}, {"gate": "B2", "airline": "American Airlines", "arr_flight": "AAL849", "dep_flight": "AAL836", "aircraft": "A319", "origin": "ORD", "dest": "ORD", "seats": "128 seats", "arr_time": "1832 EDT", "dep_time": "1912 EDT", "turn": "0 hr 40 min", "bar_start": 842, "bar_end": 882, "type": "turn"}, {"gate": "B2", "airline": "American Airlines", "arr_flight": "RPA4394", "dep_flight": "x", "aircraft": "E175", "origin": "LGA", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2054 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 984, "type": "ron_in"}, {"gate": "B4", "airline": "American Airlines", "arr_flight": "x", "dep_flight": "AAL424", "aircraft": "A321", "origin": "X", "dest": "CLT", "seats": "190 seats", "arr_time": null, "dep_time": "631 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 121, "type": "ron_in"}, {"gate": "B4", "airline": "American Airlines", "arr_flight": "AAL2872", "dep_flight": "AAL2872", "aircraft": "B738", "origin": "CLT", "dest": "CLT", "seats": "172 seats", "arr_time": "838 EDT", "dep_time": "943 EDT", "turn": "1 hr 5 min", "bar_start": 248, "bar_end": 313, "type": "turn"}, {"gate": "B4", "airline": "American Airlines", "arr_flight": "AAL960", "dep_flight": "AAL2758", "aircraft": "B738", "origin": "DFW", "dest": "DFW", "seats": "172 seats", "arr_time": "1011 EDT", "dep_time": "1101 EDT", "turn": "0 hr 50 min", "bar_start": 341, "bar_end": 391, "type": "turn"}, {"gate": "B4", "airline": "American Airlines", "arr_flight": "AAL3102", "dep_flight": "AAL3078", "aircraft": "A21N", "origin": "DFW", "dest": "LAX", "seats": "102 seats", "arr_time": "1209 EDT", "dep_time": "1255 EDT", "turn": "0 hr 40 min", "bar_start": 459, "bar_end": 505, "type": "turn"}, {"gate": "B4", "airline": "American Airlines", "arr_flight": "AAL3015", "dep_flight": "AAL3015", "aircraft": "A319", "origin": "ORD", "dest": "ORD", "seats": "128 seats", "arr_time": "1414 EDT", "dep_time": "1454 EDT", "turn": "0 hr 40 min", "bar_start": 584, "bar_end": 624, "type": "turn"}, {"gate": "B4", "airline": "American Airlines", "arr_flight": "AAL926", "dep_flight": "AAL958", "aircraft": "A321", "origin": "CLT", "dest": "CLT", "seats": "190 seats", "arr_time": "1537 EDT", "dep_time": "1627 EDT", "turn": "0 hr 50 min", "bar_start": 667, "bar_end": 717, "type": "turn"}, {"gate": "B4", "airline": "American Airlines", "arr_flight": "AAL1324", "dep_flight": "AAL3096", "aircraft": "B738", "origin": "PHL", "dest": "PHL", "seats": "172 seats", "arr_time": "1736 EDT", "dep_time": "1830 EDT", "turn": "0 hr 54 min", "bar_start": 786, "bar_end": 840, "type": "turn"}, {"gate": "B4", "airline": "American Airlines", "arr_flight": "AAL3109", "dep_flight": "AAL3109", "aircraft": "B738", "origin": "CLT", "dest": "CLT", "seats": "172 seats", "arr_time": "1902 EDT", "dep_time": "1952 EDT", "turn": "0 hr 50 min", "bar_start": 872, "bar_end": 922, "type": "turn"}, {"gate": "B4", "airline": "American Airlines", "arr_flight": "AAL3047", "dep_flight": "x", "aircraft": "B738", "origin": "DFW", "dest": "X", "seats": "172 seats", "arr_time": null, "dep_time": "2141 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1031, "type": "ron_in"}, {"gate": "B6", "airline": "American Airlines", "arr_flight": "x", "dep_flight": "AAL927", "aircraft": "A321", "origin": "X", "dest": "DFW", "seats": "190 seats", "arr_time": null, "dep_time": "607 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 97, "type": "ron_in"}, {"gate": "B6", "airline": "American Airlines", "arr_flight": "AAL948", "dep_flight": "AAL952", "aircraft": "A321", "origin": "PHL", "dest": "PHL", "seats": "190 seats", "arr_time": "907 EDT", "dep_time": "1000 EDT", "turn": "0 hr 57 min", "bar_start": 277, "bar_end": 330, "type": "turn"}, {"gate": "B6", "airline": "American Airlines", "arr_flight": "AAL365", "dep_flight": "AAL3275", "aircraft": "A21N", "origin": "JFK", "dest": "SNA", "seats": "102 seats", "arr_time": "1029 EDT", "dep_time": "1109 EDT", "turn": "0 hr 40 min", "bar_start": 359, "bar_end": 399, "type": "turn"}, {"gate": "B6", "airline": "American Airlines", "arr_flight": "AAL1597", "dep_flight": "AAL514", "aircraft": "A319", "origin": "CLT", "dest": "PBI", "seats": "128 seats", "arr_time": "1235 EDT", "dep_time": "1315 EDT", "turn": "0 hr 40 min", "bar_start": 485, "bar_end": 525, "type": "turn"}, {"gate": "B6", "airline": "American Airlines", "arr_flight": "AAL1535", "dep_flight": "AAL848", "aircraft": "A319", "origin": "PHL", "dest": "AUS", "seats": "128 seats", "arr_time": "1339 EDT", "dep_time": "1420 EDT", "turn": "0 hr 41 min", "bar_start": 549, "bar_end": 590, "type": "turn"}, {"gate": "B6", "airline": "American Airlines", "arr_flight": "AAL980", "dep_flight": "AAL983", "aircraft": "B738", "origin": "DFW", "dest": "DFW", "seats": "172 seats", "arr_time": "1920 EDT", "dep_time": "2010 EDT", "turn": "0 hr 50 min", "bar_start": 890, "bar_end": 940, "type": "turn"}, {"gate": "B6", "airline": "American Airlines", "arr_flight": "AAL2981", "dep_flight": "x", "aircraft": "A321", "origin": "DFW", "dest": "X", "seats": "190 seats", "arr_time": null, "dep_time": "2311 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1121, "type": "ron_in"}, {"gate": "B16A", "airline": "American Airlines", "arr_flight": "x", "dep_flight": "RPA4692", "aircraft": "E175", "origin": "X", "dest": "ORD", "seats": "76 seats", "arr_time": null, "dep_time": "600 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 90, "type": "ron_in"}, {"gate": "B16A", "airline": "American Airlines", "arr_flight": "ENY3999", "dep_flight": "ENY3999", "aircraft": "E175", "origin": "DFW", "dest": "DFW", "seats": "76 seats", "arr_time": "1132 EDT", "dep_time": "1202 EDT", "turn": "0 hr 30 min", "bar_start": 422, "bar_end": 452, "type": "turn"}, {"gate": "B16A", "airline": "American Airlines", "arr_flight": "RPA4674", "dep_flight": "RPA4351", "aircraft": "E175", "origin": "JFK", "dest": "JFK", "seats": "76 seats", "arr_time": "1330 EDT", "dep_time": "1400 EDT", "turn": "0 hr 30 min", "bar_start": 540, "bar_end": 570, "type": "turn"}, {"gate": "B16A", "airline": "American Airlines", "arr_flight": "ENY4020", "dep_flight": "ENY4170", "aircraft": "E175", "origin": "BOS", "dest": "BOS", "seats": "76 seats", "arr_time": "1451 EDT", "dep_time": "1525 EDT", "turn": "0 hr 34 min", "bar_start": 621, "bar_end": 655, "type": "turn"}, {"gate": "B16A", "airline": "American Airlines", "arr_flight": "ENY3339", "dep_flight": "ENY3359", "aircraft": "E175", "origin": "MIA", "dest": "JAX", "seats": "76 seats", "arr_time": "1643 EDT", "dep_time": "1715EDT", "turn": "0 hr 32 min", "bar_start": 733, "bar_end": 765, "type": "turn"}, {"gate": "B16A", "airline": "American Airlines", "arr_flight": "RPA4630", "dep_flight": "x", "aircraft": "E175", "origin": "ORD", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2130 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1020, "type": "ron_in"}, {"gate": "B16", "airline": "American Airlines", "arr_flight": "x", "dep_flight": "AAL1086", "aircraft": "B738", "origin": "X", "dest": "CLT", "seats": "172 seats", "arr_time": null, "dep_time": "733 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 183, "type": "ron_in"}, {"gate": "B16", "airline": "American Airlines", "arr_flight": "x", "dep_flight": "RPA4398", "aircraft": "E175", "origin": "X", "dest": "LGA", "seats": "76 seats", "arr_time": null, "dep_time": "916 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 286, "type": "ron_in"}, {"gate": "B16", "airline": "American Airlines", "arr_flight": "AAL901", "dep_flight": "AAL936", "aircraft": "A321", "origin": "CLT", "dest": "DFW", "seats": "190 seats", "arr_time": "1045 EDT", "dep_time": "1135 EDT", "turn": "0 hr 50 min", "bar_start": 375, "bar_end": 425, "type": "turn"}, {"gate": "B16", "airline": "American Airlines", "arr_flight": "AAL1578", "dep_flight": "AAL815", "aircraft": "A319", "origin": "PHL", "dest": "MSY", "seats": "128 seats", "arr_time": "1239 EDT", "dep_time": "1320 EDT", "turn": "0 hr 41 min", "bar_start": 489, "bar_end": 530, "type": "turn"}, {"gate": "B16", "airline": "American Airlines", "arr_flight": "RPA4335", "dep_flight": "RPA4635", "aircraft": "E175", "origin": "LGA", "dest": "LGA", "seats": "76 seats", "arr_time": "1412 EDT", "dep_time": "1443 EDT", "turn": "0 hr 31 min", "bar_start": 582, "bar_end": 613, "type": "turn"}, {"gate": "B16", "airline": "American Airlines", "arr_flight": "AAL3219", "dep_flight": "AAL3219", "aircraft": "A320", "origin": "DCA", "dest": "DCA", "seats": "150 seats", "arr_time": "1555 EDT", "dep_time": "1640 EDT", "turn": "0 hr 45 min", "bar_start": 685, "bar_end": 730, "type": "turn"}, {"gate": "B16", "airline": "American Airlines", "arr_flight": "AAL671", "dep_flight": "x", "aircraft": "B738", "origin": "CLT", "dest": "X", "seats": "172 seats", "arr_time": null, "dep_time": "2208 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1058, "type": "ron_in"}, {"gate": "B18", "airline": "American Airlines", "arr_flight": "x", "dep_flight": "RPA4549", "aircraft": "E175", "origin": "X", "dest": "DCA", "seats": "76 seats", "arr_time": null, "dep_time": "600 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 90, "type": "ron_in"}, {"gate": "B18", "airline": "American Airlines", "arr_flight": "x", "dep_flight": "RPA4757", "aircraft": "E175", "origin": "X", "dest": "ORD", "seats": "76 seats", "arr_time": null, "dep_time": "852 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 262, "type": "ron_in"}, {"gate": "B18", "airline": "American Airlines", "arr_flight": "AAL3070", "dep_flight": "AAL1459", "aircraft": "A21N", "origin": "JFK", "dest": "LAX", "seats": "102 seats", "arr_time": "955 EDT", "dep_time": "1040 EDT", "turn": "0 hr 45 min", "bar_start": 325, "bar_end": 370, "type": "turn"}, {"gate": "B18", "airline": "American Airlines", "arr_flight": "AAL955", "dep_flight": "AAL902", "aircraft": "B738", "origin": "DCA", "dest": "DCA", "seats": "172 seats", "arr_time": "1101 EDT", "dep_time": "1151 EDT", "turn": "0 hr 50 min", "bar_start": 391, "bar_end": 441, "type": "turn"}, {"gate": "B18", "airline": "American Airlines", "arr_flight": "RPA4690", "dep_flight": "RPA4406", "aircraft": "E175", "origin": "BOS", "dest": "BOS", "seats": "76 seats", "arr_time": "1210 EDT", "dep_time": "1300 EDT", "turn": "0 hr 50 min", "bar_start": 460, "bar_end": 510, "type": "turn"}, {"gate": "B18", "airline": "American Airlines", "arr_flight": "AAL861", "dep_flight": "AAL835", "aircraft": "B38M", "origin": "LGA", "dest": "LGA", "seats": "172 seats", "arr_time": "1309 EDT", "dep_time": "1400 EDT", "turn": "0 hr 51 min", "bar_start": 519, "bar_end": 570, "type": "turn"}, {"gate": "B18", "airline": "American Airlines", "arr_flight": "AAL3284", "dep_flight": "AAL943", "aircraft": "B738", "origin": "PHX", "dest": "PHX", "seats": "172 seats", "arr_time": "1503 EDT", "dep_time": "1555 EDT", "turn": "0 hr 52 min", "bar_start": 633, "bar_end": 685, "type": "turn"}, {"gate": "B18", "airline": "American Airlines", "arr_flight": "RPA4515", "dep_flight": "x", "aircraft": "E175", "origin": "DCA", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2128 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1018, "type": "ron_in"}, {"gate": "B18", "airline": "American Airlines", "arr_flight": "AAL647", "dep_flight": "x", "aircraft": "B738", "origin": "MIA", "dest": "X", "seats": "172 seats", "arr_time": null, "dep_time": "2359 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1169, "type": "ron_in"}, {"gate": "B18A", "airline": "American Airlines", "arr_flight": "x", "dep_flight": "AAL3246", "aircraft": "B738", "origin": "X", "dest": "DFW", "seats": "172 seats", "arr_time": null, "dep_time": "736 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 186, "type": "ron_in"}, {"gate": "B18A", "airline": "American Airlines", "arr_flight": "AAL946", "dep_flight": "AAL3292", "aircraft": "B738", "origin": "CLT", "dest": "RDU", "seats": "172 seats", "arr_time": "1350 EDT", "dep_time": "1440 EDT", "turn": "0 hr 50 min", "bar_start": 560, "bar_end": 610, "type": "turn"}, {"gate": "B18A", "airline": "American Airlines", "arr_flight": "AAL3271", "dep_flight": "AAL2611", "aircraft": "A21N", "origin": "DFW", "dest": "LAX", "seats": "102 seats", "arr_time": "1554 EDT", "dep_time": "1650 EDT", "turn": "0 hr 56 min", "bar_start": 684, "bar_end": 740, "type": "turn"}, {"gate": "B18A", "airline": "American Airlines", "arr_flight": "RPA4697", "dep_flight": "x", "aircraft": "E175", "origin": "ORD", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2343 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1153, "type": "ron_in"}, {"gate": "B19", "airline": "Southwest Airlines", "arr_flight": "x", "dep_flight": "WN4186", "aircraft": "B738", "origin": "X", "dest": "BWI", "seats": "175 seats", "arr_time": null, "dep_time": "550 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 80, "type": "ron_in"}, {"gate": "B19", "airline": "Southwest Airlines", "arr_flight": "x", "dep_flight": "WN5125", "aircraft": "B38M", "origin": "X", "dest": "LAS", "seats": "175 seats", "arr_time": null, "dep_time": "855 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 265, "type": "ron_in"}, {"gate": "B19", "airline": "Southwest Airlines", "arr_flight": "WN3300", "dep_flight": "WN3300", "aircraft": "B38M", "origin": "MCO", "dest": "DAL", "seats": "175 seats", "arr_time": "1015 EDT", "dep_time": "1055 EDT", "turn": "0 hr 40 min", "bar_start": 345, "bar_end": 385, "type": "turn"}, {"gate": "B19", "airline": "Southwest Airlines", "arr_flight": "x", "dep_flight": "WN5114", "aircraft": "B738", "origin": "X", "dest": "BWI", "seats": "175 seats", "arr_time": null, "dep_time": "1150 EDT", "turn": null, "bar_start": -60, "bar_end": 440, "type": "ron_in"}, {"gate": "B19", "airline": "Southwest Airlines", "arr_flight": "WN3328", "dep_flight": "WN3328", "aircraft": "B38M", "origin": "BNA", "dest": "DEN", "seats": "175 seats", "arr_time": "1250 EDT", "dep_time": "1330 EDT", "turn": "0 hr 40 min", "bar_start": 500, "bar_end": 540, "type": "turn"}, {"gate": "B19", "airline": "Southwest Airlines", "arr_flight": "WN5036", "dep_flight": "WN5128", "aircraft": "B38M", "origin": "BWI", "dest": "LAX", "seats": "175 seats", "arr_time": "1600 EDT", "dep_time": "1640 EDT", "turn": "0 hr 40 min", "bar_start": 690, "bar_end": 730, "type": "turn"}, {"gate": "B19", "airline": "Southwest Airlines", "arr_flight": "WN2413", "dep_flight": "WN1820", "aircraft": "B737", "origin": "DEN", "dest": "BNA", "seats": "137 seats", "arr_time": "1745 EDT", "dep_time": "1820 EDT", "turn": "0 hr 35 min", "bar_start": 795, "bar_end": 830, "type": "turn"}, {"gate": "B19", "airline": "Southwest Airlines", "arr_flight": "WN3376", "dep_flight": "x", "aircraft": "B38M", "origin": "MDW", "dest": "X", "seats": "175 seats", "arr_time": null, "dep_time": "2150 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1040, "type": "ron_in"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "x", "dep_flight": "WN4190", "aircraft": "B38M", "origin": "X", "dest": "TPA", "seats": "175 seats", "arr_time": null, "dep_time": "630 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 120, "type": "ron_in"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "x", "dep_flight": "WN1407", "aircraft": "B737", "origin": "X", "dest": "MDW", "seats": "137 seats", "arr_time": null, "dep_time": "830 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 240, "type": "ron_in"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "WN2416", "dep_flight": "WN2416", "aircraft": "B738", "origin": "MDW", "dest": "BWI", "seats": "175 seats", "arr_time": "945 EDT", "dep_time": "1025 EDT", "turn": "0 hr 40 min", "bar_start": 315, "bar_end": 355, "type": "turn"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "WN2137", "dep_flight": "WN2137", "aircraft": "B737", "origin": "BWI", "dest": "HOU", "seats": "137 seats", "arr_time": "1215 EDT", "dep_time": "1250 EDT", "turn": "0 hr 35 min", "bar_start": 465, "bar_end": 500, "type": "turn"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "WN5022", "dep_flight": "WN5113", "aircraft": "B38M", "origin": "HOU", "dest": "FLL", "seats": "175 seats", "arr_time": "1310 EDT", "dep_time": "1350 EDT", "turn": "0 hr 35 min", "bar_start": 520, "bar_end": 560, "type": "turn"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "WN5029", "dep_flight": "WN5115", "aircraft": "B38M", "origin": "TPA", "dest": "TPA", "seats": "175 seats", "arr_time": "1425 EDT", "dep_time": "1505 EDT", "turn": "0 hr 40 min", "bar_start": 595, "bar_end": 635, "type": "turn"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "WN5032", "dep_flight": "WN5120", "aircraft": "B737", "origin": "MCO", "dest": "AUS", "seats": "137 seats", "arr_time": "1525 EDT", "dep_time": "1605 EDT", "turn": "0 hr 40 min", "bar_start": 655, "bar_end": 695, "type": "turn"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "WN1970", "dep_flight": "WN1970", "aircraft": "B38M", "origin": "PHX", "dest": "MCO", "seats": "175 seats", "arr_time": "1700 EDT", "dep_time": "1740 EDT", "turn": "0 hr 40 min", "bar_start": 750, "bar_end": 790, "type": "turn"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "WN3612", "dep_flight": "WN2032", "aircraft": "B738", "origin": "HOU", "dest": "LAS", "seats": "175 seats", "arr_time": "1800 EDT", "dep_time": "1840 EDT", "turn": "0 hr 40 min", "bar_start": 810, "bar_end": 850, "type": "turn"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "WN300", "dep_flight": "WN300", "aircraft": "B737", "origin": "BWI", "dest": "MDW", "seats": "137 seats", "arr_time": "1945 EDT", "dep_time": "2020 EDT", "turn": "0 hr 35 min", "bar_start": 915, "bar_end": 950, "type": "turn"}, {"gate": "B17", "airline": "Southwest Airlines", "arr_flight": "WN801", "dep_flight": "X", "aircraft": "B737", "origin": "BNA", "dest": "X", "seats": "137 seats", "arr_time": null, "dep_time": "2230 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1080, "type": "ron_in"}, {"gate": "B15", "airline": "Southwest Airlines", "arr_flight": "x", "dep_flight": "WN4798", "aircraft": "B737", "origin": "X", "dest": "BNA", "seats": "137 seats", "arr_time": null, "dep_time": "700 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 150, "type": "ron_in"}, {"gate": "B15", "airline": "Southwest Airlines", "arr_flight": "WN5025", "dep_flight": "WN5095", "aircraft": "B737", "origin": "BNA", "dest": "MCO", "seats": "137 seats", "arr_time": "925 EDT", "dep_time": "1020 EDT", "turn": "0 hr 55 min", "bar_start": 295, "bar_end": 350, "type": "turn"}, {"gate": "B15", "airline": "Southwest Airlines", "arr_flight": "WN833", "dep_flight": "WN833", "aircraft": "B38M", "origin": "TPA", "dest": "PHX", "seats": "175 seats", "arr_time": "1110 EDT", "dep_time": "1150 EDT", "turn": "0 hr 40 min", "bar_start": 400, "bar_end": 440, "type": "turn"}, {"gate": "B15", "airline": "Southwest Airlines", "arr_flight": "WN5024", "dep_flight": "WN5096", "aircraft": "B738", "origin": "DAL", "dest": "MCI", "seats": "175 seats", "arr_time": "1250 EDT", "dep_time": "1335 EDT", "turn": "0 hr 45 min", "bar_start": 500, "bar_end": 545, "type": "turn"}, {"gate": "B15", "airline": "Southwest Airlines", "arr_flight": "WN1324", "dep_flight": "WN4722", "aircraft": "B737", "origin": "MDW", "dest": "MDW", "seats": "137 seats", "arr_time": "1510 EDT", "dep_time": "1545 EDT", "turn": "0 hr 35 min", "bar_start": 640, "bar_end": 675, "type": "turn"}, {"gate": "B15", "airline": "Southwest Airlines", "arr_flight": "WN2308", "dep_flight": "WN2308", "aircraft": "B737", "origin": "TPA", "dest": "BWI", "seats": "137 seats", "arr_time": "1630 EDT", "dep_time": "1710 EDT", "turn": "0 hr 40 min", "bar_start": 720, "bar_end": 760, "type": "turn"}, {"gate": "B15", "airline": "Southwest Airlines", "arr_flight": "WN5038", "dep_flight": "WN5104", "aircraft": "B38M", "origin": "LAS", "dest": "DAL", "seats": "175 seats", "arr_time": "1730 EDT", "dep_time": "1810 EDT", "turn": "0 hr 40 min", "bar_start": 780, "bar_end": 820, "type": "turn"}, {"gate": "B15", "airline": "Southwest Airlines", "arr_flight": "WN5039", "dep_flight": "WN5087", "aircraft": "B738", "origin": "MCI", "dest": "DEN", "seats": "175 seats", "arr_time": "1830 EDT", "dep_time": "1910 EDT", "turn": "0 hr 40 min", "bar_start": 840, "bar_end": 880, "type": "turn"}, {"gate": "B15", "airline": "Southwest Airlines", "arr_flight": "WN5040", "dep_flight": "WN5099", "aircraft": "B38M", "origin": "FLL", "dest": "PHX", "seats": "175 seats", "arr_time": "1935 EDT", "dep_time": "2015 EDT", "turn": "0 hr 40 min", "bar_start": 905, "bar_end": 945, "type": "turn"}, {"gate": "B15", "airline": "Southwest Airlines", "arr_flight": "WN2714", "dep_flight": "X", "aircraft": "B737", "origin": "MCO", "dest": "X", "seats": "137 seats", "arr_time": null, "dep_time": "2325 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1135, "type": "ron_in"}, {"gate": "B11", "airline": "Southwest Airlines", "arr_flight": "x", "dep_flight": "WN5109", "aircraft": "B38M", "origin": "X", "dest": "HOU", "seats": "175 seats", "arr_time": null, "dep_time": "750 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 200, "type": "ron_in"}, {"gate": "B11", "airline": "Southwest Airlines", "arr_flight": "WN3058", "dep_flight": "WN3058", "aircraft": "B737", "origin": "DAL", "dest": "TPA", "seats": "137 seats", "arr_time": "1605 EDT", "dep_time": "1640 EDT", "turn": "0 hr 35 min", "bar_start": 695, "bar_end": 730, "type": "turn"}, {"gate": "B11", "airline": "Southwest Airlines", "arr_flight": "WN1319", "dep_flight": "X", "aircraft": "B738", "origin": "BWI", "dest": "X", "seats": "175 seats", "arr_time": null, "dep_time": "020 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1190, "type": "ron_in"}, {"gate": "B9", "airline": "Southwest Airlines", "arr_flight": "x", "dep_flight": "WN4188", "aircraft": "B737", "origin": "X", "dest": "MCO", "seats": "137 seats", "arr_time": null, "dep_time": "725 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 175, "type": "ron_in"}, {"gate": "B9", "airline": "Breeze Airways", "arr_flight": "MXY374", "dep_flight": "MXY375", "aircraft": "A223", "origin": "PIT", "dest": "PIT", "seats": "137 seats", "arr_time": "1130 EDT", "dep_time": "1210 EDT", "turn": "0 hr 40 min", "bar_start": 420, "bar_end": 460, "type": "turn"}, {"gate": "B9", "airline": "Breeze Airways", "arr_flight": "MXY330", "dep_flight": "MXY331", "aircraft": "A223", "origin": "RDU", "dest": "RDU", "seats": "137 seats", "arr_time": "1326 EDT", "dep_time": "1426 EDT", "turn": "1hr 0 min", "bar_start": 536, "bar_end": 596, "type": "turn"}, {"gate": "B9", "airline": "Breeze Airways", "arr_flight": "MXY752", "dep_flight": "MXY753", "aircraft": "A223", "origin": "RSW", "dest": "RSW", "seats": "137 seats", "arr_time": "1934 EDT", "dep_time": "2014 EDT", "turn": "0 hr 40 min", "bar_start": 904, "bar_end": 944, "type": "turn"}, {"gate": "B9", "airline": "Southwest Airlines", "arr_flight": "WN3958", "dep_flight": "X", "aircraft": "B737", "origin": "LAS", "dest": "X", "seats": "137 seats", "arr_time": null, "dep_time": "050 EDT", "turn": null, "bar_start": -60, "bar_end": 1220, "type": "ron_in"}, {"gate": "B5", "airline": "American Airlines", "arr_flight": "x", "dep_flight": "RPA4750", "aircraft": "E175", "origin": "X", "dest": "PHL", "seats": "76 seats", "arr_time": null, "dep_time": "731 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 181, "type": "ron_in"}, {"gate": "B5", "airline": "American Airlines", "arr_flight": "AAL868", "dep_flight": "AAL831", "aircraft": "A319", "origin": "ORD", "dest": "ORD", "seats": "128 seats", "arr_time": "1007 EDT", "dep_time": "1047 EDT", "turn": "0 hr 30 min", "bar_start": 337, "bar_end": 377, "type": "turn"}, {"gate": "B5", "airline": "American Airlines", "arr_flight": "AAL2524", "dep_flight": "AAL3082", "aircraft": "A319", "origin": "ORD", "dest": "IAH", "seats": "128 seats", "arr_time": "1216 EDT", "dep_time": "1300 EDT", "turn": "0 hr 44 min", "bar_start": 466, "bar_end": 510, "type": "turn"}, {"gate": "B5", "airline": "American Airlines", "arr_flight": "RPA4466", "dep_flight": "x", "aircraft": "E175", "origin": "PHL", "dest": "X", "seats": "76 seats", "arr_time": null, "dep_time": "2231 EDT", "turn": "RON OVERNIGHT", "bar_start": -60, "bar_end": 1081, "type": "ron_in"}]};
+
+// Constants
+const CHART_START_MIN = 0;       // 04:30 EDT
+const CHART_END_MIN = 1265;      // 01:35 EDT next day (approx)
+const CHART_TOTAL_MIN = CHART_END_MIN - CHART_START_MIN;
+const ROW_H = 60;
+const HEADER_H = 56;
+
+// State
+const state = {
+  concourse: 'a',
+  zoom: 1,
+  pxPerMin: 4,           // base pixels per minute at zoom 1
+  filter: 'all',          // all|active|ron|turns
+  search: '',
+  airlinesOff: new Set(),
+  activeFlightId: null,
+};
+
+// Airline metadata
+const AIRLINES = {
+  'Delta Air Lines':       { iata: 'DL',  cls: 'delta',      hex: '#c8102e' },
+  'United Airlines':       { iata: 'UA',  cls: 'united',     hex: '#1d4f91' },
+  'American Airlines':     { iata: 'AA',  cls: 'american',   hex: '#0078d2' },
+  'Southwest Airlines':    { iata: 'WN',  cls: 'southwest',  hex: '#f9b612' },
+  'Spirit Airlines':       { iata: 'NK',  cls: 'spirit',     hex: '#ffeb00' },
+  'Allegiant Air':         { iata: 'G4',  cls: 'allegiant',  hex: '#ff7900' },
+  'Sun Country Airlines':  { iata: 'SY',  cls: 'suncountry', hex: '#d61f2c' },
+  'Breeze Airways':        { iata: 'MX',  cls: 'breeze',     hex: '#4dbeff' },
+};
+
+// Derive airport descriptor
+const AIRPORT_NAMES = {
+  ATL: 'Atlanta', DTW: 'Detroit', MSP: 'Minneapolis', LGA: 'New York LaGuardia',
+  JFK: 'New York JFK', EWR: 'Newark', BOS: 'Boston', PHL: 'Philadelphia',
+  DCA: 'Washington National', IAD: 'Washington Dulles', ORD: 'Chicago O\'Hare',
+  MDW: 'Chicago Midway', DFW: 'Dallas/Ft. Worth', DAL: 'Dallas Love',
+  IAH: 'Houston', HOU: 'Houston Hobby', AUS: 'Austin', SAN: 'San Diego',
+  LAX: 'Los Angeles', SFO: 'San Francisco', LAS: 'Las Vegas', PHX: 'Phoenix',
+  DEN: 'Denver', SLC: 'Salt Lake City', MIA: 'Miami', FLL: 'Fort Lauderdale',
+  MCO: 'Orlando', TPA: 'Tampa', JAX: 'Jacksonville', RSW: 'Fort Myers',
+  CLT: 'Charlotte', RDU: 'Raleigh-Durham', PIT: 'Pittsburgh', BNA: 'Nashville',
+  BWI: 'Baltimore', SAT: 'San Antonio', SNA: 'Orange County', PBI: 'West Palm Beach',
+  MSY: 'New Orleans', MCI: 'Kansas City', VPS: 'Destin', PIE: 'Clearwater',
+  PGD: 'Punta Gorda', SFB: 'Sanford', SDB: 'Sanford',
+};
+
+// ============================================================
+// Time Utilities
+// ============================================================
+
+function minToHHMM(mins) {
+  // mins from 0430 EDT
+  let total = 4 * 60 + 30 + mins;
+  while (total < 0) total += 24 * 60;
+  const h = Math.floor(total / 60) % 24;
+  const m = ((total % 60) + 60) % 60;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+
+function minToDisplayTime(mins) {
+  return minToHHMM(mins);
+}
+
+function getNowMin() {
+  // Convert current real clock to chart minutes (treating as if it's Derby Saturday)
+  // For demo purposes, use a deterministic "demo time" so the layout is interesting
+  // But also support real clock if we're between 04:30 and 02:00 next day.
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const baseH = 4, baseM = 30;
+  let curMin = h * 60 + m - (baseH * 60 + baseM);
+  if (curMin < -60 || curMin > CHART_END_MIN + 60) {
+    // Outside ops hours - return mid-day demo time
+    return 540; // 13:30
+  }
+  return curMin;
+}
+
+// ============================================================
+// Data prep
+// ============================================================
+
+function getFlights() {
+  const c = state.concourse;
+  let flights = [];
+  if (c === 'a' || c === 'all') flights = flights.concat(FLIGHT_DATA.concourse_a.map(f => ({ ...f, _concourse: 'a' })));
+  if (c === 'b' || c === 'all') flights = flights.concat(FLIGHT_DATA.concourse_b.map(f => ({ ...f, _concourse: 'b' })));
+  return flights;
+}
+
+// Concourse A gate ordering matches the original Excel (clockwise from A1)
+const CONCOURSE_A_ORDER = ['A1', 'A3', 'A5', 'A9', 'A11', 'A15', 'A14', 'A12', 'A10', 'A8', 'A6', 'A4'];
+const CONCOURSE_B_ORDER = ['B2', 'B4', 'B6', 'B16A', 'B16', 'B18', 'B18A', 'B19', 'B17', 'B15', 'B11', 'B9', 'B5'];
+
+function getGateOrder() {
+  if (state.concourse === 'a') return CONCOURSE_A_ORDER;
+  if (state.concourse === 'b') return CONCOURSE_B_ORDER;
+  return [...CONCOURSE_A_ORDER, ...CONCOURSE_B_ORDER];
+}
+
+// Group flights by gate
+function groupByGate(flights) {
+  const map = new Map();
+  for (const f of flights) {
+    if (!map.has(f.gate)) map.set(f.gate, []);
+    map.get(f.gate).push(f);
+  }
+  return map;
+}
+
+function getGateStats(gateFlights) {
+  const airlines = new Set();
+  let total = 0, ron = 0;
+  for (const f of gateFlights) {
+    airlines.add(f.airline);
+    total++;
+    if (f.type !== 'turn') ron++;
+  }
+  return { airlines: [...airlines], total, ron };
+}
+
+// ============================================================
+// Render
+// ============================================================
+
+function pxPerMin() { return state.pxPerMin * state.zoom; }
+
+function timelineWidth() { return CHART_TOTAL_MIN * pxPerMin(); }
+
+function render() {
+  const flights = getFlights();
+  const gateOrder = getGateOrder();
+  const flightsByGate = groupByGate(flights);
+  
+  // Clear  
+  const root = document.getElementById('gantt');
+  root.innerHTML = '';
+  root.style.gridTemplateColumns = `240px ${timelineWidth()}px`;
+  
+  // === Left: Gate Column ===
+  const gateColEl = document.createElement('div');
+  gateColEl.className = 'gate-col';
+  
+  const gateHeader = document.createElement('div');
+  gateHeader.className = 'gate-header-cell';
+  gateHeader.textContent = 'Gate / Airlines';
+  gateColEl.appendChild(gateHeader);
+  
+  for (let i = 0; i < gateOrder.length; i++) {
+    const gate = gateOrder[i];
+    const cell = document.createElement('div');
+    cell.className = 'gate-cell';
+    if (state.concourse === 'all' && gate.startsWith('B') && i > 0 && gateOrder[i-1].startsWith('A')) {
+      cell.style.borderTop = '2px solid var(--accent-soft)';
+    }
+    cell.dataset.gate = gate;
+    
+    const stats = getGateStats(flightsByGate.get(gate) || []);
+    
+    cell.innerHTML = `
+      <div class="gate-num">${gate}</div>
+      <div class="gate-airlines">
+        ${stats.airlines.map(a => {
+          const m = AIRLINES[a];
+          if (!m) return '';
+          return `<span class="airline-chip" style="background:${m.hex}">${m.iata}</span>`;
+        }).join('')}
+      </div>
+      <div class="gate-stats">
+        <div><span class="num">${stats.total}</span> ops</div>
+        <div><span class="num">${stats.ron}</span> RON</div>
+      </div>
+    `;
+    gateColEl.appendChild(cell);
+  }
+  root.appendChild(gateColEl);
+  
+  // === Right: Timeline ===
+  const tlCol = document.createElement('div');
+  tlCol.className = 'timeline-col';
+  
+  // Time header
+  const timeHeader = document.createElement('div');
+  timeHeader.className = 'time-header';
+  
+  // Add hour ticks every 60 min (and every 30 min when zoomed in)
+  const minorInterval = state.zoom >= 1.5 ? 30 : 60;
+  for (let m = 0; m <= CHART_TOTAL_MIN; m += minorInterval) {
+    const tick = document.createElement('div');
+    const isMajor = m % 60 === 0;
+    tick.className = 'time-tick' + (isMajor ? ' major' : '');
+    tick.style.left = (m * pxPerMin()) + 'px';
+    if (isMajor) {
+      tick.innerHTML = `<span class="label">${minToHHMM(m)}</span>`;
+    } else {
+      tick.innerHTML = `<span class="sublabel">${minToHHMM(m)}</span>`;
+    }
+    timeHeader.appendChild(tick);
+  }
+  tlCol.appendChild(timeHeader);
+  
+  // Rows
+  const rowsEl = document.createElement('div');
+  rowsEl.className = 'timeline-rows';
+  rowsEl.style.position = 'relative';
+  
+  // Hour grid lines (across entire row area)
+  for (let m = 0; m <= CHART_TOTAL_MIN; m += 60) {
+    const line = document.createElement('div');
+    line.className = 'grid-line major';
+    line.style.left = (m * pxPerMin()) + 'px';
+    line.style.height = (gateOrder.length * ROW_H) + 'px';
+    rowsEl.appendChild(line);
+  }
+  if (state.zoom >= 1.5) {
+    for (let m = 30; m <= CHART_TOTAL_MIN; m += 60) {
+      const line = document.createElement('div');
+      line.className = 'grid-line';
+      line.style.left = (m * pxPerMin()) + 'px';
+      line.style.height = (gateOrder.length * ROW_H) + 'px';
+      rowsEl.appendChild(line);
+    }
+  }
+  
+  // Now line
+  const nowMin = getNowMin();
+  if (nowMin >= 0 && nowMin <= CHART_TOTAL_MIN) {
+    const nowEl = document.createElement('div');
+    nowEl.className = 'now-line';
+    nowEl.style.left = (nowMin * pxPerMin()) + 'px';
+    nowEl.style.height = (gateOrder.length * ROW_H) + 'px';
+    nowEl.innerHTML = `<div class="now-label">NOW · ${minToHHMM(nowMin)}</div>`;
+    rowsEl.appendChild(nowEl);
+  }
+  
+  // Gate rows + flight bars
+  for (let i = 0; i < gateOrder.length; i++) {
+    const gate = gateOrder[i];
+    const row = document.createElement('div');
+    row.className = 'gate-row';
+    if (state.concourse === 'all' && gate.startsWith('B') && i > 0 && gateOrder[i-1].startsWith('A')) {
+      row.style.borderTop = '2px solid var(--accent-soft)';
+    }
+    row.dataset.gate = gate;
+    row.style.position = 'relative';
+    
+    const gFlights = flightsByGate.get(gate) || [];
+    for (const f of gFlights) {
+      const bar = makeFlightBar(f);
+      row.appendChild(bar);
+    }
+    
+    rowsEl.appendChild(row);
+  }
+  
+  tlCol.appendChild(rowsEl);
+  root.appendChild(tlCol);
+  
+  // Apply current filters/search
+  applyFilters();
+  updateStats();
+  renderLegend();
+}
+
+function makeFlightBar(f) {
+  const bar = document.createElement('div');
+  const meta = AIRLINES[f.airline] || { cls: 'reserved', iata: '??' };
+  bar.className = 'flight-bar ' + meta.cls + (f.type !== 'turn' ? ' ron' : '');
+  
+  const start = Math.max(0, f.bar_start);
+  const end = Math.min(CHART_TOTAL_MIN, f.bar_end);
+  const width = Math.max(end - start, 6);
+  
+  bar.style.left = (start * pxPerMin()) + 'px';
+  bar.style.width = (width * pxPerMin()) + 'px';
+  
+  // Stash data
+  bar.dataset.airline = f.airline;
+  bar.dataset.flightId = f.gate + '-' + (f.dep_flight || f.arr_flight || 'unk') + '-' + start;
+  
+  // Bar content - line 1: flight numbers; line 2: route
+  const arr = f.arr_flight && f.arr_flight !== 'x' && f.arr_flight !== 'X' ? f.arr_flight : null;
+  const dep = f.dep_flight && f.dep_flight !== 'x' && f.dep_flight !== 'X' ? f.dep_flight : null;
+  
+  let line1 = '';
+  if (arr && dep && arr !== dep) line1 = arr + ' → ' + dep;
+  else if (arr) line1 = arr;
+  else if (dep) line1 = dep;
+  
+  let line2 = '';
+  if (f.origin && f.origin !== 'X' && f.dest && f.dest !== 'X') {
+    line2 = f.origin + ' → SDF → ' + f.dest;
+  } else if (f.origin && f.origin !== 'X') {
+    line2 = f.origin + ' → SDF · RON';
+  } else if (f.dest && f.dest !== 'X') {
+    line2 = 'RON · SDF → ' + f.dest;
+  }
+  
+  let tag = '';
+  if (f.type !== 'turn') {
+    tag = '<span class="bar-tag">RON</span>';
+  } else if (f.aircraft) {
+    tag = `<span class="bar-tag">${f.aircraft}</span>`;
+  }
+  
+  // Hide details when bar is too narrow
+  const showDetails = (width * pxPerMin()) > 80;
+  const showLine2 = (width * pxPerMin()) > 140;
+  
+  bar.innerHTML = `
+    <div class="bar-content">
+      ${showDetails ? `<div class="bar-line1">${line1 || '—'}</div>` : ''}
+      ${showLine2 ? `<div class="bar-line2">${line2}</div>` : ''}
+      ${!showDetails && tag ? tag : ''}
+    </div>
+  `;
+  
+  // Search/filter searchable text
+  const searchText = [
+    f.gate, f.airline, meta.iata, arr, dep, f.aircraft, f.origin, f.dest, f.seats, f.arr_time, f.dep_time
+  ].filter(Boolean).join(' ').toLowerCase();
+  bar._searchText = searchText;
+  bar._flight = f;
+  
+  // Events
+  bar.addEventListener('mouseenter', e => showTooltip(e, f));
+  bar.addEventListener('mousemove', e => moveTooltip(e));
+  bar.addEventListener('mouseleave', hideTooltip);
+  bar.addEventListener('click', e => {
+    e.stopPropagation();
+    openPanel(f);
+  });
+  
+  return bar;
+}
+
+// ============================================================
+// Tooltip
+// ============================================================
+
+function showTooltip(e, f) {
+  const tt = document.getElementById('tooltip');
+  const meta = AIRLINES[f.airline] || {};
+  
+  const arr = (f.arr_flight && f.arr_flight !== 'x' && f.arr_flight !== 'X') ? f.arr_flight : null;
+  const dep = (f.dep_flight && f.dep_flight !== 'x' && f.dep_flight !== 'X') ? f.dep_flight : null;
+  
+  tt.innerHTML = `
+    <div class="tooltip-head" style="border-left: 3px solid ${meta.hex}">
+      <div class="tooltip-airline" style="color:${meta.hex}">${f.airline} · ${meta.iata || ''}</div>
+      <div class="tooltip-gate">${f.gate}</div>
+    </div>
+    <div class="tooltip-route">
+      <div class="tooltip-airport">
+        <div class="code">${f.origin && f.origin !== 'X' ? f.origin : '—'}</div>
+        <div class="label">${f.type !== 'turn' && (!f.origin || f.origin === 'X') ? 'RON' : 'From'}</div>
+        <div class="time">${f.arr_time || '—'}</div>
+      </div>
+      <div class="tooltip-arrow">→</div>
+      <div class="tooltip-airport">
+        <div class="code">SDF</div>
+        <div class="label">${f.gate}</div>
+        <div class="time">${meta.iata || ''}</div>
+      </div>
+      <div class="tooltip-arrow">→</div>
+      <div class="tooltip-airport">
+        <div class="code">${f.dest && f.dest !== 'X' ? f.dest : '—'}</div>
+        <div class="label">${f.type !== 'turn' && (!f.dest || f.dest === 'X') ? 'RON' : 'To'}</div>
+        <div class="time">${f.dep_time || '—'}</div>
+      </div>
+    </div>
+    <div class="tooltip-details">
+      <div class="tooltip-detail"><div class="k">Inbound</div><div class="v ${arr ? '' : 'muted'}">${arr || 'Overnight'}</div></div>
+      <div class="tooltip-detail"><div class="k">Outbound</div><div class="v ${dep ? '' : 'muted'}">${dep || 'Overnight'}</div></div>
+      <div class="tooltip-detail"><div class="k">Aircraft</div><div class="v">${f.aircraft || '—'}</div></div>
+      <div class="tooltip-detail"><div class="k">Seats</div><div class="v">${f.seats ? f.seats.replace(' seats', '') : '—'}</div></div>
+      <div class="tooltip-detail" style="grid-column: span 2"><div class="k">Turn</div><div class="v">${f.turn || 'N/A'}</div></div>
+    </div>
+  `;
+  
+  tt.classList.add('visible');
+  moveTooltip(e);
+}
+
+function moveTooltip(e) {
+  const tt = document.getElementById('tooltip');
+  const offset = 16;
+  const x = e.clientX + offset;
+  const y = e.clientY + offset;
+  const rect = tt.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  
+  let left = x;
+  let top = y;
+  if (x + rect.width > vw - 8) left = e.clientX - rect.width - offset;
+  if (y + rect.height > vh - 8) top = e.clientY - rect.height - offset;
+  
+  tt.style.left = Math.max(8, left) + 'px';
+  tt.style.top = Math.max(8, top) + 'px';
+}
+
+function hideTooltip() {
+  document.getElementById('tooltip').classList.remove('visible');
+}
+
+// ============================================================
+// Detail Panel
+// ============================================================
+
+function openPanel(f) {
+  const panel = document.getElementById('panel');
+  const overlay = document.getElementById('panel-overlay');
+  const body = document.getElementById('panel-body');
+  const meta = AIRLINES[f.airline] || {};
+  
+  const arr = (f.arr_flight && f.arr_flight !== 'x' && f.arr_flight !== 'X') ? f.arr_flight : null;
+  const dep = (f.dep_flight && f.dep_flight !== 'x' && f.dep_flight !== 'X') ? f.dep_flight : null;
+  
+  const originName = AIRPORT_NAMES[f.origin] || '';
+  const destName = AIRPORT_NAMES[f.dest] || '';
+  
+  // Determine route arrows
+  let routeViz = '';
+  if (f.type === 'turn' && f.origin !== 'X' && f.dest !== 'X') {
+    routeViz = `
+      <div class="panel-route-line">
+        <div class="panel-route-stop">
+          <div class="code">${f.origin}</div>
+          <div class="label">${originName || 'Inbound'}</div>
+          <div class="time">${f.arr_time || ''}</div>
+        </div>
+        <div class="panel-route-conn">
+          <div class="line"></div>
+          <div class="turn">${f.turn || 'TURN'}</div>
+        </div>
+        <div class="panel-route-stop">
+          <div class="code">SDF</div>
+          <div class="label">Gate ${f.gate}</div>
+          <div class="time">${minToDisplayTime(f.bar_start)} – ${minToDisplayTime(f.bar_end)}</div>
+        </div>
+        <div class="panel-route-conn">
+          <div class="line"></div>
+        </div>
+        <div class="panel-route-stop">
+          <div class="code">${f.dest}</div>
+          <div class="label">${destName || 'Outbound'}</div>
+          <div class="time">${f.dep_time || ''}</div>
+        </div>
+      </div>
+    `;
+  } else if (f.type !== 'turn') {
+    // RON - single arrival or single departure
+    const isDeparting = !!dep && (!arr || arr === 'x');
+    const isArriving = !!arr && (!dep || dep === 'x');
+    
+    if (isDeparting) {
+      routeViz = `
+        <div class="panel-route-line">
+          <div class="panel-route-stop">
+            <div class="code">RON</div>
+            <div class="label">Overnight</div>
+            <div class="time">— prior day —</div>
+          </div>
+          <div class="panel-route-conn">
+            <div class="line"></div>
+            <div class="turn">RON · DEPART</div>
+          </div>
+          <div class="panel-route-stop">
+            <div class="code">SDF</div>
+            <div class="label">Gate ${f.gate}</div>
+            <div class="time">→ ${f.dep_time || ''}</div>
+          </div>
+          <div class="panel-route-conn">
+            <div class="line"></div>
+          </div>
+          <div class="panel-route-stop">
+            <div class="code">${f.dest}</div>
+            <div class="label">${destName || 'Outbound'}</div>
+            <div class="time">${f.dep_time || ''}</div>
+          </div>
+        </div>
+      `;
+    } else {
+      routeViz = `
+        <div class="panel-route-line">
+          <div class="panel-route-stop">
+            <div class="code">${f.origin}</div>
+            <div class="label">${originName || 'Inbound'}</div>
+            <div class="time">${f.arr_time || ''}</div>
+          </div>
+          <div class="panel-route-conn">
+            <div class="line"></div>
+            <div class="turn">RON · ARRIVE</div>
+          </div>
+          <div class="panel-route-stop">
+            <div class="code">SDF</div>
+            <div class="label">Gate ${f.gate}</div>
+            <div class="time">${f.dep_time || 'overnight'}</div>
+          </div>
+          <div class="panel-route-conn">
+            <div class="line"></div>
+          </div>
+          <div class="panel-route-stop">
+            <div class="code">RON</div>
+            <div class="label">Overnight</div>
+            <div class="time">— next day —</div>
+          </div>
+        </div>
+      `;
+    }
+  }
+  
+  body.innerHTML = `
+    <div class="panel-airline-banner" style="background: ${meta.hex}22; border-left-color: ${meta.hex}">
+      <div class="name" style="color: ${meta.hex}">${f.airline}</div>
+      <div class="iata" style="color: ${meta.hex}">${meta.iata} · ${arr || 'overnight'} ${arr && dep && arr !== dep ? '→ ' + dep : ''}</div>
+    </div>
+    
+    <div class="panel-route-viz">
+      ${routeViz}
+    </div>
+    
+    <div class="panel-section-title">Flight Details</div>
+    <div class="panel-grid">
+      <div class="panel-stat"><div class="k">Inbound Flight</div><div class="v">${arr || '—'}</div></div>
+      <div class="panel-stat"><div class="k">Outbound Flight</div><div class="v">${dep || '—'}</div></div>
+      <div class="panel-stat"><div class="k">Aircraft Type</div><div class="v">${f.aircraft || '—'}</div></div>
+      <div class="panel-stat"><div class="k">Seats</div><div class="v">${f.seats ? f.seats.replace(' seats', '') : '—'}</div></div>
+      <div class="panel-stat"><div class="k">Arr Time</div><div class="v">${f.arr_time || 'overnight'}</div></div>
+      <div class="panel-stat"><div class="k">Dep Time</div><div class="v">${f.dep_time || 'overnight'}</div></div>
+      <div class="panel-stat"><div class="k">Turn / Block</div><div class="v">${f.turn || '—'}</div></div>
+      <div class="panel-stat"><div class="k">Concourse</div><div class="v">${f._concourse ? f._concourse.toUpperCase() : f.gate.charAt(0)}</div></div>
+    </div>
+    
+    <div class="panel-section-title">Notes</div>
+    <div class="panel-stat" style="background:transparent;border:1px dashed var(--border-strong);">
+      <div class="v" style="font-family: 'Space Grotesk', sans-serif; font-size: 12px; color: var(--text-dim); font-weight: 400;">
+        ${f.type === 'ron_in' ? 'Aircraft arrived previous day for overnight stay before departing this operating day.' : ''}
+        ${f.type === 'ron_out' ? 'Aircraft will remain overnight at SDF after this arrival.' : ''}
+        ${f.type === 'turn' ? `Standard turn at Gate ${f.gate}. Coordinate ground handling for ${f.aircraft || 'aircraft'} on time.` : ''}
+      </div>
+    </div>
+  `;
+  
+  panel.classList.add('visible');
+  overlay.classList.add('visible');
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('visible');
+  document.getElementById('panel-overlay').classList.remove('visible');
+}
+
+// ============================================================
+// Filters
+// ============================================================
+
+function applyFilters() {
+  const bars = document.querySelectorAll('.flight-bar');
+  const nowMin = getNowMin();
+  const search = state.search.trim().toLowerCase();
+  
+  let activeCount = 0;
+  let visibleCount = 0;
+  
+  bars.forEach(bar => {
+    const f = bar._flight;
+    const meta = AIRLINES[f.airline] || {};
+    
+    let visible = true;
+    
+    // Airline filter
+    if (state.airlinesOff.has(f.airline)) visible = false;
+    
+    // Filter mode
+    if (state.filter === 'active') {
+      if (!(f.bar_start <= nowMin && f.bar_end >= nowMin)) visible = false;
+    } else if (state.filter === 'ron') {
+      if (f.type === 'turn') visible = false;
+    } else if (state.filter === 'turns') {
+      if (f.type !== 'turn') visible = false;
+    }
+    
+    // Search
+    if (search && !bar._searchText.includes(search)) visible = false;
+    
+    bar.classList.toggle('dimmed', !visible);
+    bar.style.pointerEvents = visible ? 'auto' : 'none';
+    if (visible) visibleCount++;
+    
+    if (f.bar_start <= nowMin && f.bar_end >= nowMin) activeCount++;
+  });
+  
+  document.getElementById('active-count').textContent = activeCount;
+}
+
+function updateStats() {
+  const flights = getFlights();
+  document.getElementById('total-count').textContent = flights.length;
+  document.getElementById('count-a').textContent = FLIGHT_DATA.concourse_a.length;
+  document.getElementById('count-b').textContent = FLIGHT_DATA.concourse_b.length;
+  document.getElementById('count-all').textContent = FLIGHT_DATA.concourse_a.length + FLIGHT_DATA.concourse_b.length;
+}
+
+function updateNowDisplay() {
+  const realNow = new Date();
+  const h = realNow.getHours();
+  const m = realNow.getMinutes();
+  const baseH = 4, baseM = 30;
+  let curMin = h * 60 + m - (baseH * 60 + baseM);
+  const inOpsWindow = curMin >= -60 && curMin <= CHART_END_MIN + 60;
+  const display = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  document.getElementById('now-display').textContent = inOpsWindow ? display : display + ' (off-ops)';
+}
+
+function renderLegend() {
+  const legend = document.getElementById('legend');
+  // Preserve label
+  const flights = getFlights();
+  const counts = {};
+  for (const f of flights) {
+    counts[f.airline] = (counts[f.airline] || 0) + 1;
+  }
+  
+  // Find the label
+  legend.innerHTML = '<span class="legend-label">Airlines</span>';
+  
+  const presentAirlines = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  for (const a of presentAirlines) {
+    const meta = AIRLINES[a];
+    if (!meta) continue;
+    const item = document.createElement('div');
+    item.className = 'legend-item' + (state.airlinesOff.has(a) ? ' disabled' : '');
+    item.innerHTML = `
+      <div class="legend-swatch ${meta.cls}"></div>
+      <span class="legend-name">${meta.iata}</span>
+      <span class="legend-count">${counts[a]}</span>
+    `;
+    item.addEventListener('click', () => {
+      if (state.airlinesOff.has(a)) state.airlinesOff.delete(a);
+      else state.airlinesOff.add(a);
+      applyFilters();
+      renderLegend();
+    });
+    legend.appendChild(item);
+  }
+  
+  // RON marker
+  const ron = document.createElement('div');
+  ron.className = 'legend-item';
+  ron.style.cursor = 'default';
+  ron.innerHTML = `<div class="legend-swatch ron"></div><span class="legend-name">RON / Overnight</span>`;
+  legend.appendChild(ron);
+}
+
+// ============================================================
+// Event handlers
+// ============================================================
+
+function setupHandlers() {
+  // Concourse tabs
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      state.concourse = t.dataset.concourse;
+      render();
+    });
+  });
+  
+  // Zoom buttons
+  document.querySelectorAll('[data-zoom]').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('[data-zoom]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      state.zoom = parseFloat(b.dataset.zoom);
+      render();
+    });
+  });
+  
+  // Filter mode buttons
+  const filterBtns = {
+    'show-all': 'all',
+    'show-active': 'active',
+    'show-ron': 'ron',
+    'show-turns': 'turns',
+  };
+  Object.keys(filterBtns).forEach(id => {
+    document.getElementById(id).addEventListener('click', () => {
+      Object.keys(filterBtns).forEach(x => document.getElementById(x).classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      state.filter = filterBtns[id];
+      applyFilters();
+    });
+  });
+  
+  // Search
+  document.getElementById('search').addEventListener('input', e => {
+    state.search = e.target.value;
+    applyFilters();
+  });
+  
+  // Jump buttons
+  function scrollToMin(m, center = true) {
+    const wrap = document.getElementById('gantt-wrap');
+    const target = m * pxPerMin() + 240;  // +240 for gate column width
+    if (center) {
+      wrap.scrollLeft = Math.max(0, target - wrap.clientWidth / 2);
+    } else {
+      wrap.scrollLeft = Math.max(0, target);
+    }
+  }
+  document.getElementById('jump-now').addEventListener('click', () => scrollToMin(getNowMin()));
+  document.getElementById('jump-am').addEventListener('click', () => scrollToMin(330));   // 10:00
+  document.getElementById('jump-pm').addEventListener('click', () => scrollToMin(630));   // 15:00
+  document.getElementById('jump-eve').addEventListener('click', () => scrollToMin(930));  // 20:00
+  
+  // Panel close
+  document.getElementById('panel-close').addEventListener('click', closePanel);
+  document.getElementById('panel-overlay').addEventListener('click', closePanel);
+  
+  // ESC closes panel
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closePanel();
+      hideTooltip();
+    }
+  });
+  
+  // Ticking clock
+  setInterval(() => {
+    updateNowDisplay();
+    // Update now line position
+    const nowEl = document.querySelector('.now-line');
+    if (nowEl) {
+      const nowMin = getNowMin();
+      nowEl.style.left = (nowMin * pxPerMin()) + 'px';
+      const lbl = nowEl.querySelector('.now-label');
+      if (lbl) lbl.textContent = 'NOW · ' + minToHHMM(nowMin);
+    }
+    if (state.filter === 'active') applyFilters();
+  }, 30000); // every 30s
+}
+
+// ============================================================
+// Init
+// ============================================================
+
+setupHandlers();
+render();
+updateNowDisplay();
+
+// Auto-scroll on initial load: prefer real "now" if it's during the operating day,
+// otherwise default to the morning push (~08:00) which is when the chart is most useful for planning.
+setTimeout(() => {
+  const wrap = document.getElementById('gantt-wrap');
+  const realNow = getNowMin();
+  // 06:00 = 90 min, 23:00 = 1110 min — anywhere in this window, use real now
+  const inOpsHours = realNow >= 90 && realNow <= 1110;
+  const target = (inOpsHours ? realNow : 210) * pxPerMin() + 240; // 210 = 08:00
+  wrap.scrollLeft = Math.max(0, target - wrap.clientWidth / 3);
+}, 100);
+
+</script>
+</body>
+</html>
