@@ -324,6 +324,136 @@
   }
   .unassigned-empty .big { font-size: 18px; color: var(--good); margin-bottom: 8px; }
 
+  /* === Bottom unassigned panel === */
+  .slot-panel.full { grid-column: 1 / -1; }
+  .slot.unassigned-slot {
+    border-left-width: 3px;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.1s;
+  }
+  .slot.unassigned-slot:hover { transform: translateY(-1px); background: var(--bg-elevated); }
+  .slot.unassigned-slot .type-tag {
+    display: inline-block;
+    font-size: 8px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 2px;
+    background: rgba(248,81,73,0.15);
+    color: var(--danger);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-left: 4px;
+  }
+
+  /* === Edit-pairing modal === */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,14,20,0.72);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    width: 560px;
+    max-width: 92vw;
+    max-height: 88vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 16px 18px; font-size: 12px; }
+  .modal-intro { color: var(--text-dim); margin-bottom: 14px; line-height: 1.5; }
+  .edit-field { margin-bottom: 16px; }
+  .edit-field > label {
+    display: block;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .edit-field input {
+    width: 100%;
+    background: var(--bg-row);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    border-radius: 3px;
+  }
+  .edit-field input:disabled {
+    opacity: 0.45;
+    background: var(--bg);
+  }
+  .edit-current {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .edit-current.orphan { color: var(--danger); }
+  .modal-actions {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .modal-actions .danger {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  .modal-actions .danger:hover {
+    background: rgba(248,81,73,0.12);
+  }
+  .edit-error {
+    background: rgba(248,81,73,0.1);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 8px 10px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .edit-error.show { display: block; }
+
   .concourse-tabs {
     display: flex;
     gap: 0;
@@ -827,6 +957,29 @@
         </div>
         <div class="slot-list" id="soon-list"></div>
       </div>
+      <div class="slot-panel full">
+        <div class="slot-panel-title">
+          <span>Unassigned flight ops <span style="color:var(--text-muted); font-weight:500; margin-left:6px;">click to manually assign</span></span>
+          <span class="count" id="ua-bottom-count">0</span>
+        </div>
+        <div class="slot-list" id="ua-bottom-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit-pairing modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="edit-modal-title">Edit pairing</div>
+      <button class="modal-close" id="edit-modal-close">×</button>
+    </div>
+    <div class="modal-body" id="edit-modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn danger" id="edit-modal-unpair" style="margin-right:auto; display:none;">Unpair counterpart</button>
+      <button class="btn" id="edit-modal-cancel">Cancel</button>
+      <button class="btn active" id="edit-modal-save">Save</button>
     </div>
   </div>
 </div>
@@ -1690,6 +1843,36 @@ function updateMetaAndSlots() {
       </div>
     `).join('');
   }
+
+  // Unassigned-ops panel (bottom, full width)
+  const uaList = document.getElementById('ua-bottom-list');
+  const uaCount = document.getElementById('ua-bottom-count');
+  uaCount.textContent = STATE.unassigned.length;
+  if (!STATE.unassigned.length) {
+    uaList.innerHTML = `<div class="empty-msg">✓ All flight ops assigned for ${STATE.selectedDate || 'this date'}</div>`;
+  } else {
+    uaList.innerHTML = STATE.unassigned.map((op, idx) => {
+      const flightLabel = op.type === 'turn'
+        ? `${op.arr.flight} → ${op.dep.flight}`
+        : op.type === 'ron_in' ? `RON ← ${op.arr.flight}` : `RON → ${op.dep.flight}`;
+      const route = op.type === 'turn'
+        ? `${op.arr.orig} ↔ ${op.dep.dest}`
+        : op.type === 'ron_in' ? `${op.arr.orig} → SDF` : `SDF → ${op.dep.dest}`;
+      const cVar = airlineColorVar(op.airline);
+      return `<div class="slot unassigned-slot" data-ua-idx="${idx}" style="border-left-color: var(--c-${cVar})">
+        <div class="g" style="color:var(--c-${cVar})">${flightLabel}<span class="type-tag">${op.type.replace('_','-')}</span></div>
+        <div class="d">${op.airline} · ${op.equip} · ${route}</div>
+        <div class="occ">${minToHHMM(op.bar_start)}–${minToHHMM(op.bar_end)} (${fmtDur(op.bar_end - op.bar_start)})</div>
+      </div>`;
+    }).join('');
+    uaList.querySelectorAll('.unassigned-slot').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.uaIdx);
+        setView('manual');
+        setTimeout(() => toggleUnassignedRow(idx), 30);
+      });
+    });
+  }
 }
 
 // =============================================================
@@ -2035,6 +2218,202 @@ function manualAssign(opIdx, gateId, isConflict) {
 }
 
 // =============================================================
+// Edit-pairing modal (dblclick on bar)
+// =============================================================
+const EDIT = { opIdx: null };
+
+function lookupFlight(flightStr, date, kind /* 'arrival' | 'departure' */) {
+  if (!flightStr || !date) return null;
+  const wanted = String(flightStr).replace(/^[A-Z]+\s*/i, '').replace(/\.0$/, '').trim();
+  if (!wanted) return null;
+  return STATE.flights.find(f =>
+    String(f.flight).trim() === wanted &&
+    f.date === date &&
+    (kind === 'arrival' ? !f.isDeparture : f.isDeparture)
+  );
+}
+
+function openEditModal(opIdx) {
+  const op = STATE.assignments[opIdx];
+  if (!op) return;
+  EDIT.opIdx = opIdx;
+
+  const D = STATE.selectedDate;
+  const Dprev = neighborDate(STATE.flights, D, -1);
+  const Dnext = neighborDate(STATE.flights, D, +1);
+
+  let title, intro, arrDate, depDate, arrFlight, arrDetail, depFlight, depDetail, showUnpair = false;
+
+  if (op.type === 'turn') {
+    title = `Edit turn — ${op.airline} ${op.arr.flight} / ${op.dep.flight}`;
+    intro = `Both legs are same-day (${D}). Change either flight number to a different SDF arrival or departure on this date.`;
+    arrDate = D;
+    depDate = D;
+    arrFlight = op.arr?.flight || '';
+    arrDetail = currentDetail(op.arr, 'arr');
+    depFlight = op.dep?.flight || '';
+    depDetail = currentDetail(op.dep, 'dep');
+  } else if (op.type === 'ron_in') {
+    title = `Edit RON pairing — ${op.airline} ${op.arr.flight} → next-day`;
+    intro = `Arrival on <b>${D}</b> paired with a departure on <b>${Dnext || '— (no next-day data)'}</b>. Edit flight numbers to fix or establish the pairing.`;
+    arrDate = D;
+    depDate = Dnext;
+    arrFlight = op.arr?.flight || '';
+    arrDetail = currentDetail(op.arr, 'arr');
+    depFlight = op.dep_next?.flight || '';
+    depDetail = op.dep_next
+      ? currentDetail(op.dep_next, 'dep')
+      : `<span class="orphan-marker">orphan — no next-day pair</span>`;
+    showUnpair = !!op.dep_next;
+  } else if (op.type === 'ron_out') {
+    title = `Edit RON pairing — prev-day → ${op.airline} ${op.dep.flight}`;
+    intro = `Departure on <b>${D}</b> paired with an arrival on <b>${Dprev || '— (no prev-day data)'}</b>. Edit flight numbers to fix or establish the pairing.`;
+    arrDate = Dprev;
+    depDate = D;
+    arrFlight = op.arr_prev?.flight || '';
+    arrDetail = op.arr_prev
+      ? currentDetail(op.arr_prev, 'arr')
+      : `<span class="orphan-marker">orphan — no prior-day pair</span>`;
+    depFlight = op.dep?.flight || '';
+    depDetail = currentDetail(op.dep, 'dep');
+    showUnpair = !!op.arr_prev;
+  } else {
+    return;
+  }
+
+  document.getElementById('edit-modal-title').textContent = title;
+  document.getElementById('edit-modal-body').innerHTML = `
+    <div class="edit-error" id="edit-error"></div>
+    <div class="modal-intro">${intro}</div>
+    <div class="edit-field">
+      <label>Arrival flight # ${arrDate ? '(' + arrDate + ')' : '— no date in extract'}</label>
+      <input type="text" id="edit-arr-input" value="${arrFlight}" ${arrDate ? '' : 'disabled'} placeholder="${arrDate ? 'flight number' : ''}">
+      <div class="edit-current">${arrDetail}</div>
+    </div>
+    <div class="edit-field">
+      <label>Departure flight # ${depDate ? '(' + depDate + ')' : '— no date in extract'}</label>
+      <input type="text" id="edit-dep-input" value="${depFlight}" ${depDate ? '' : 'disabled'} placeholder="${depDate ? 'flight number' : ''}">
+      <div class="edit-current">${depDetail}</div>
+    </div>`;
+
+  document.getElementById('edit-modal-unpair').style.display = showUnpair ? 'inline-block' : 'none';
+  document.getElementById('edit-modal').classList.add('open');
+  // focus the editable input that's most likely the user's target
+  setTimeout(() => {
+    if (op.type === 'ron_in' && Dnext) document.getElementById('edit-dep-input').focus();
+    else if (op.type === 'ron_out' && Dprev) document.getElementById('edit-arr-input').focus();
+    else document.getElementById('edit-arr-input').focus();
+  }, 60);
+}
+
+function currentDetail(flight, kind) {
+  if (!flight) return '—';
+  const t = kind === 'arr' ? flight.arrTime : flight.depTime;
+  const where = kind === 'arr' ? `from ${flight.orig}` : `to ${flight.dest}`;
+  return `Currently: <b>${flight.opAl || ''} ${flight.flight}</b> ${where} @ ${minToHHMM(t || 0)} · ${flight.equip}`;
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+  EDIT.opIdx = null;
+}
+
+function showEditError(msg) {
+  const el = document.getElementById('edit-error');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function saveEditModal() {
+  const op = STATE.assignments[EDIT.opIdx];
+  if (!op) return closeEditModal();
+  const D = STATE.selectedDate;
+  const Dprev = neighborDate(STATE.flights, D, -1);
+  const Dnext = neighborDate(STATE.flights, D, +1);
+
+  const arrInput = document.getElementById('edit-arr-input').value.trim();
+  const depInput = document.getElementById('edit-dep-input').value.trim();
+
+  let arrFlight = null, depFlight = null;
+
+  if (op.type === 'turn') {
+    if (arrInput) {
+      arrFlight = lookupFlight(arrInput, D, 'arrival');
+      if (!arrFlight) return showEditError(`Arrival flight ${arrInput} not found on ${D}.`);
+    }
+    if (depInput) {
+      depFlight = lookupFlight(depInput, D, 'departure');
+      if (!depFlight) return showEditError(`Departure flight ${depInput} not found on ${D}.`);
+    }
+    if (!arrFlight || !depFlight) return showEditError('A turn needs both arrival and departure.');
+    op.arr = arrFlight;
+    op.dep = depFlight;
+    op.equip = arrFlight.equip || depFlight.equip;
+    op.airline = arrFlight.mktAl || depFlight.mktAl;
+    op.op = arrFlight.opAl || depFlight.opAl;
+    op.seats = arrFlight.seats || depFlight.seats;
+    op.bar_start = arrFlight.arrTime + (arrFlight.arrFlag > 0 ? 1440 : 0);
+    op.bar_end = depFlight.depTime;
+  } else if (op.type === 'ron_in') {
+    if (!arrInput) return showEditError('Arrival flight (today) is required for a RON-IN.');
+    arrFlight = lookupFlight(arrInput, D, 'arrival');
+    if (!arrFlight) return showEditError(`Arrival flight ${arrInput} not found on ${D}.`);
+    if (depInput && Dnext) {
+      depFlight = lookupFlight(depInput, Dnext, 'departure');
+      if (!depFlight) return showEditError(`Departure flight ${depInput} not found on ${Dnext}.`);
+    }
+    op.arr = arrFlight;
+    op.equip = arrFlight.equip;
+    op.airline = arrFlight.mktAl;
+    op.op = arrFlight.opAl;
+    op.seats = arrFlight.seats;
+    op.bar_start = arrFlight.arrTime + (arrFlight.arrFlag > 0 ? 1440 : 0);
+    op.bar_end = GANTT_END_MIN;
+    op.dep_next = depFlight || null;
+    op.paired = !!depFlight;
+  } else if (op.type === 'ron_out') {
+    if (!depInput) return showEditError('Departure flight (today) is required for a RON-OUT.');
+    depFlight = lookupFlight(depInput, D, 'departure');
+    if (!depFlight) return showEditError(`Departure flight ${depInput} not found on ${D}.`);
+    if (arrInput && Dprev) {
+      arrFlight = lookupFlight(arrInput, Dprev, 'arrival');
+      if (!arrFlight) return showEditError(`Arrival flight ${arrInput} not found on ${Dprev}.`);
+    }
+    op.dep = depFlight;
+    op.equip = depFlight.equip;
+    op.airline = depFlight.mktAl;
+    op.op = depFlight.opAl;
+    op.seats = depFlight.seats;
+    op.bar_start = GANTT_START_MIN;
+    op.bar_end = depFlight.depTime;
+    op.arr_prev = arrFlight || null;
+    op.paired = !!arrFlight;
+  }
+
+  STATE.assignments.sort((a, b) => a.bar_start - b.bar_start);
+  renderGantt();
+  renderNeedsAttention();
+  updateMetaAndSlots();
+  closeEditModal();
+}
+
+function unpairCounterpart() {
+  const op = STATE.assignments[EDIT.opIdx];
+  if (!op) return closeEditModal();
+  if (op.type === 'ron_in') {
+    op.dep_next = null;
+    op.paired = false;
+  } else if (op.type === 'ron_out') {
+    op.arr_prev = null;
+    op.paired = false;
+  }
+  renderGantt();
+  renderNeedsAttention();
+  updateMetaAndSlots();
+  closeEditModal();
+}
+
+// =============================================================
 // Rules editor
 // =============================================================
 function renderRules() {
@@ -2260,9 +2639,29 @@ function wireEvents() {
     if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('.bar')) hideTooltip();
   });
   gantt.addEventListener('mousedown', onGanttMouseDown);
+  gantt.addEventListener('dblclick', e => {
+    const bar = e.target.closest('.bar');
+    if (!bar) return;
+    const idx = Number(bar.dataset.barIdx);
+    if (!Number.isFinite(idx)) return;
+    hideTooltip();
+    openEditModal(idx);
+  });
   // Mousemove/up listeners on window so drag still works if cursor leaves the gantt
   window.addEventListener('mousemove', onGanttMouseMove);
   window.addEventListener('mouseup', onGanttMouseUp);
+
+  // Edit modal buttons
+  document.getElementById('edit-modal-close').addEventListener('click', closeEditModal);
+  document.getElementById('edit-modal-cancel').addEventListener('click', closeEditModal);
+  document.getElementById('edit-modal-save').addEventListener('click', saveEditModal);
+  document.getElementById('edit-modal-unpair').addEventListener('click', unpairCounterpart);
+  document.getElementById('edit-modal').addEventListener('click', e => {
+    if (e.target.id === 'edit-modal') closeEditModal();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('edit-modal').classList.contains('open')) closeEditModal();
+  });
 
   // rules actions
   document.getElementById('rules-save').addEventListener('click', () => {
