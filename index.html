@@ -217,13 +217,37 @@
   .unassigned-row.open { border-color: var(--border-strong); }
   .unassigned-head {
     display: grid;
-    grid-template-columns: 140px 90px 110px 1fr 220px 24px;
+    grid-template-columns: 140px 90px 110px 1fr 220px 32px 24px;
     gap: 14px;
     align-items: center;
     padding: 10px 14px;
     cursor: pointer;
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
+  }
+  .gear-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 3px 7px;
+    border-radius: 3px;
+    font-size: 13px;
+    line-height: 1;
+    transition: all 0.12s;
+  }
+  .gear-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .slot.unassigned-slot { position: relative; padding-right: 30px; }
+  .slot.unassigned-slot .gear-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    padding: 2px 5px;
+    font-size: 11px;
   }
   .unassigned-head:hover { background: var(--bg-row-alt); }
   .unassigned-head .lbl {
@@ -1860,6 +1884,7 @@ function updateMetaAndSlots() {
         : op.type === 'ron_in' ? `${op.arr.orig} → SDF` : `SDF → ${op.dep.dest}`;
       const cVar = airlineColorVar(op.airline);
       return `<div class="slot unassigned-slot" data-ua-idx="${idx}" style="border-left-color: var(--c-${cVar})">
+        <button class="gear-btn" data-edit-ua-bottom="${idx}" title="Edit pairing">⚙</button>
         <div class="g" style="color:var(--c-${cVar})">${flightLabel}<span class="type-tag">${op.type.replace('_','-')}</span></div>
         <div class="d">${op.airline} · ${op.equip} · ${route}</div>
         <div class="occ">${minToHHMM(op.bar_start)}–${minToHHMM(op.bar_end)} (${fmtDur(op.bar_end - op.bar_start)})</div>
@@ -1870,6 +1895,13 @@ function updateMetaAndSlots() {
         const idx = Number(el.dataset.uaIdx);
         setView('manual');
         setTimeout(() => toggleUnassignedRow(idx), 30);
+      });
+    });
+    uaList.querySelectorAll('[data-edit-ua-bottom]').forEach(el => {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const idx = Number(el.dataset.editUaBottom);
+        openEditModal(STATE.unassigned[idx]);
       });
     });
   }
@@ -1996,6 +2028,9 @@ function renderUnassigned() {
           <div class="lbl">Window</div>
           <div>${minToHHMM(op.bar_start)} → ${minToHHMM(op.bar_end)} <span style="color:var(--text-muted);">(${fmtDur(op.bar_end - op.bar_start)})</span></div>
         </div>
+        <div>
+          <button class="gear-btn" data-edit-ua="${idx}" title="Edit pairing">⚙</button>
+        </div>
         <div class="chev">▾</div>
       </div>
       <div class="unassigned-body" id="ua-body-${idx}" style="display:none;"></div>
@@ -2004,6 +2039,13 @@ function renderUnassigned() {
 
   wrap.querySelectorAll('[data-toggle]').forEach(el => {
     el.addEventListener('click', () => toggleUnassignedRow(Number(el.dataset.toggle)));
+  });
+  wrap.querySelectorAll('[data-edit-ua]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = Number(el.dataset.editUa);
+      openEditModal(STATE.unassigned[idx]);
+    });
   });
 }
 
@@ -2218,9 +2260,9 @@ function manualAssign(opIdx, gateId, isConflict) {
 }
 
 // =============================================================
-// Edit-pairing modal (dblclick on bar)
+// Edit-pairing modal (dblclick on bar, or gear icon)
 // =============================================================
-const EDIT = { opIdx: null };
+const EDIT = { op: null };
 
 function lookupFlight(flightStr, date, kind /* 'arrival' | 'departure' */) {
   if (!flightStr || !date) return null;
@@ -2233,10 +2275,9 @@ function lookupFlight(flightStr, date, kind /* 'arrival' | 'departure' */) {
   );
 }
 
-function openEditModal(opIdx) {
-  const op = STATE.assignments[opIdx];
+function openEditModal(op) {
   if (!op) return;
-  EDIT.opIdx = opIdx;
+  EDIT.op = op;
 
   const D = STATE.selectedDate;
   const Dprev = neighborDate(STATE.flights, D, -1);
@@ -2315,7 +2356,7 @@ function currentDetail(flight, kind) {
 
 function closeEditModal() {
   document.getElementById('edit-modal').classList.remove('open');
-  EDIT.opIdx = null;
+  EDIT.op = null;
 }
 
 function showEditError(msg) {
@@ -2325,7 +2366,7 @@ function showEditError(msg) {
 }
 
 function saveEditModal() {
-  const op = STATE.assignments[EDIT.opIdx];
+  const op = EDIT.op;
   if (!op) return closeEditModal();
   const D = STATE.selectedDate;
   const Dprev = neighborDate(STATE.flights, D, -1);
@@ -2394,11 +2435,12 @@ function saveEditModal() {
   renderGantt();
   renderNeedsAttention();
   updateMetaAndSlots();
+  if (STATE.view === 'manual') renderUnassigned();
   closeEditModal();
 }
 
 function unpairCounterpart() {
-  const op = STATE.assignments[EDIT.opIdx];
+  const op = EDIT.op;
   if (!op) return closeEditModal();
   if (op.type === 'ron_in') {
     op.dep_next = null;
@@ -2410,6 +2452,7 @@ function unpairCounterpart() {
   renderGantt();
   renderNeedsAttention();
   updateMetaAndSlots();
+  if (STATE.view === 'manual') renderUnassigned();
   closeEditModal();
 }
 
@@ -2645,7 +2688,7 @@ function wireEvents() {
     const idx = Number(bar.dataset.barIdx);
     if (!Number.isFinite(idx)) return;
     hideTooltip();
-    openEditModal(idx);
+    openEditModal(STATE.assignments[idx]);
   });
   // Mousemove/up listeners on window so drag still works if cursor leaves the gantt
   window.addEventListener('mousemove', onGanttMouseMove);
