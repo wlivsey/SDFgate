@@ -4,7 +4,7 @@
     "min_ground_time_min": 35,
     "turn_buffer_min": 5,
     "opening_soon_horizon_min": 60,
-    "max_turn_gap_min": 240
+    "max_turn_gap_min": 360
   },
   "carriers": [
     { "code": "DL", "name": "Delta Air Lines",     "operators": ["DAL", "RPA", "EDV", "SKW", "ENY"] },

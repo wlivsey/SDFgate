@@ -27,7 +27,7 @@
 
     --c-DL: #c8102e; --c-DL-soft: rgba(200, 16, 46, 0.18);
     --c-UA: #1d4f91; --c-UA-soft: rgba(29, 79, 145, 0.25);
-    --c-AA: #0078d2; --c-AA-soft: rgba(0, 120, 210, 0.22);
+    --c-AA: #c8ccd4; --c-AA-soft: rgba(200, 204, 212, 0.18);
     --c-WN: #f9b612; --c-WN-soft: rgba(249, 182, 18, 0.18);
     --c-NK: #ffeb00; --c-NK-soft: rgba(255, 235, 0, 0.16);
     --c-G4: #ff7900; --c-G4-soft: rgba(255, 121, 0, 0.18);
@@ -430,7 +430,8 @@
     font-weight: 700;
     margin-bottom: 4px;
   }
-  .edit-field input {
+  .edit-field input,
+  .edit-field select {
     width: 100%;
     background: var(--bg-row);
     color: var(--text);
@@ -440,9 +441,24 @@
     font-size: 13px;
     border-radius: 3px;
   }
-  .edit-field input:disabled {
+  .edit-field input:disabled,
+  .edit-field select:disabled {
     opacity: 0.45;
     background: var(--bg);
+  }
+  .edit-flex {
+    display: grid;
+    grid-template-columns: 1fr 160px;
+    gap: 8px;
+  }
+  .edit-flex .date-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    font-weight: 700;
+    align-self: end;
+    margin-bottom: 6px;
   }
   .edit-current {
     margin-top: 4px;
@@ -607,6 +623,27 @@
   }
   .row:nth-child(even) { background: var(--bg-row-alt); }
   .row.inactive { opacity: 0.4; }
+  .row.hardstand-row {
+    background: rgba(255, 176, 0, 0.035) !important;
+  }
+  .row.hardstand-row.first-hs {
+    border-top: 2px dashed var(--accent);
+    margin-top: 6px;
+  }
+  .gate-cell.hardstand-cell {
+    background: var(--bg-elevated);
+  }
+  .gate-cell.hardstand-cell.first-hs {
+    border-top: 2px dashed var(--accent);
+    margin-top: 6px;
+  }
+  .gate-cell.hardstand-cell .gate-num {
+    color: var(--accent);
+  }
+  .gate-cell.hardstand-cell .gate-meta .hs-tag {
+    color: var(--accent);
+    font-weight: 700;
+  }
 
   /* hour gridlines drawn via repeating-linear-gradient below */
 
@@ -925,7 +962,7 @@
     </div>
     <div class="control-group">
       <span class="control-label">Cursor</span>
-      <input type="range" class="cursor-slider" id="cursor-slider" min="0" max="1260" value="450" step="5">
+      <input type="range" class="cursor-slider" id="cursor-slider" min="0" max="1440" value="720" step="5">
       <input type="time" id="cursor-time" style="width:90px;">
       <button class="btn" id="cursor-now">Now</button>
     </div>
@@ -1045,9 +1082,12 @@
 // =============================================================
 // Constants
 // =============================================================
-const GANTT_START_MIN = 270;   // 04:30 = 270 min since midnight
-const GANTT_END_MIN   = 270 + 21*60; // 01:30 next day (21h window)
-const GANTT_SPAN_MIN  = GANTT_END_MIN - GANTT_START_MIN; // 1260
+// Gantt window spans the full SDF operational day (00:00 → 24:00). All bars are
+// positioned in sdfDate-local minutes (0–1440). Arrivals like 00:25 sit at the
+// left of the window; late-night ops sit at the right.
+const GANTT_START_MIN = 0;
+const GANTT_END_MIN   = 1440;
+const GANTT_SPAN_MIN  = GANTT_END_MIN - GANTT_START_MIN; // 1440
 const PX_PER_MIN_BASE = 4;     // 4 px/min @ 100% zoom
 
 // Map IATA operator codes → marketing code, for color/policy lookup.
@@ -1073,11 +1113,46 @@ const STATE = {
   concourse: 'A',
   filter: 'all',
   zoom: 1.0,
-  cursorMin: 720,         // minutes since midnight, default noon
+  cursorMin: 720,         // sdfDate-local minutes since midnight, default noon
   assignments: [],        // [{gate, flight, bar_start, bar_end, type}]
   unassigned: [],
   conflicts: new Set(),   // assignment indices in conflict
+  hardstands: ['HS1'],    // dynamically grows: a new empty HS is appended whenever all existing HS rows are occupied
 };
+
+// Hardstand helpers --------------------------------------------------------
+function hardstandPseudoGate(id) {
+  return {
+    id,
+    concourse: 'HS',
+    status: 'active',
+    use_type: 'hardstand',
+    leaseholder: null,
+    max_size: 'widebody', // hardstands accept any size
+    jet_bridge: false,
+    hardstand: true,
+    notes: '',
+    _isHardstand: true,
+  };
+}
+
+function findGateById(id) {
+  if (!id) return null;
+  const real = STATE.rules?.gates?.find(g => g.id === id);
+  if (real) return real;
+  if (STATE.hardstands.includes(id)) return hardstandPseudoGate(id);
+  return null;
+}
+
+function ensureEmptyHardstand() {
+  // After any assignment, ensure at least one HS row is empty.
+  const occupied = new Set(STATE.assignments.map(a => a.gate).filter(g => g && g.startsWith('HS')));
+  const anyEmpty = STATE.hardstands.some(h => !occupied.has(h));
+  if (!anyEmpty) {
+    const n = STATE.hardstands.length + 1;
+    STATE.hardstands.push('HS' + n);
+  }
+}
 
 // =============================================================
 // Rules persistence
@@ -1117,7 +1192,7 @@ const BUILTIN_FALLBACK_RULES = {
     "min_ground_time_min": 35,
     "turn_buffer_min": 5,
     "opening_soon_horizon_min": 60,
-    "max_turn_gap_min": 240
+    "max_turn_gap_min": 360
   },
   "carriers": [
     { "code": "DL", "name": "Delta Air Lines",      "operators": ["DAL","RPA","EDV","SKW","ENY"] },
@@ -1203,6 +1278,12 @@ function fmtDur(min) {
 // =============================================================
 // Diio ingestion
 // =============================================================
+function addDaysIso(iso, n) {
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 async function loadDiioFile(file) {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: 'array', cellDates: true });
@@ -1239,8 +1320,16 @@ async function loadDiioFile(file) {
     const dest = r[I.dest];
     if (orig !== 'SDF' && dest !== 'SDF') continue; // safety
     const isDeparture = (orig === 'SDF');
+    const arrFlag = r[I.arrFlag] != null ? Number(r[I.arrFlag]) : 0;
+    // SDF operational date: for arrivals, +1 day when arrFlag > 0 because the
+    // Diio row's Date is the *departure* date at the origin station, not the
+    // SDF arrival date. For departures, sdfDate == Diio date.
+    const sdfDate = isDeparture
+      ? dateStr
+      : (arrFlag > 0 ? addDaysIso(dateStr, 1) : dateStr);
     flights.push({
       date: dateStr,
+      sdfDate,
       mktAl: r[I.mktAl] || '',
       opAl: r[I.opAl] || '',
       orig, dest,
@@ -1250,23 +1339,27 @@ async function loadDiioFile(file) {
       depTime: parseHHMM(r[I.depTime]),
       arrTime: parseHHMM(r[I.arrTime]),
       block: r[I.block] != null ? Number(r[I.block]) : null,
-      arrFlag: r[I.arrFlag] != null ? Number(r[I.arrFlag]) : 0,
+      arrFlag,
       isDeparture,
     });
   }
-  const datesSet = new Set(flights.map(f => f.date));
+  // availableDates: union of all sdfDates and original dates so the date picker covers everything
+  const datesSet = new Set();
+  for (const f of flights) { datesSet.add(f.date); datesSet.add(f.sdfDate); }
   return { flights, dates: Array.from(datesSet).sort() };
 }
 
 // =============================================================
 // Turn pairing
 // =============================================================
-// Same-day pass: pair arrivals to departures within one op-day.
-// Returns the turns and the leftovers needed for overnight pairing.
+// Same-day pass: pair arrivals to departures within one SDF operational day.
+// Filters by sdfDate (not Diio date), so an arrFlag=1 arrival from Diio date D-1
+// is correctly considered for pairing on SDF op-day D.
+// _sdfMin is the local minute on the sdfDate (always 0–1439).
 function pairSameDay(flights, date, rules) {
-  const dayFlights = flights.filter(f => f.date === date);
+  const dayFlights = flights.filter(f => f.sdfDate === date);
   const arrivals = dayFlights.filter(f => !f.isDeparture)
-    .map(f => ({ ...f, _sdfMin: f.arrTime != null ? f.arrTime + (f.arrFlag > 0 ? 1440 : 0) : null }))
+    .map(f => ({ ...f, _sdfMin: f.arrTime }))
     .filter(f => f._sdfMin != null)
     .sort((a,b) => a._sdfMin - b._sdfMin);
   const departures = dayFlights.filter(f => f.isDeparture)
@@ -1279,7 +1372,31 @@ function pairSameDay(flights, date, rules) {
   const minGround = rules.globals.min_ground_time_min;
   const maxGap = rules.globals.max_turn_gap_min;
 
+  // Pass 1: prefer pairings where flight # + equip + op carrier all match.
+  // Same-flight-# turns (e.g., DAL1523 arrives and DAL1523 departs) are very common
+  // and should never be matched by mere temporal proximity to a different flight.
   for (const a of arrivals) {
+    let best = -1, bestGap = Infinity;
+    for (let i = 0; i < departures.length; i++) {
+      if (usedDep.has(i)) continue;
+      const d = departures[i];
+      if (String(d.flight) !== String(a.flight)) continue;
+      if (d.opAl !== a.opAl) continue;
+      if (d.equip !== a.equip) continue;
+      const gap = d._sdfMin - a._sdfMin;
+      if (gap < minGround) continue;
+      if (gap > maxGap) continue;
+      if (gap < bestGap) { bestGap = gap; best = i; }
+    }
+    if (best >= 0) {
+      usedDep.add(best);
+      turns.push({ arr: a, dep: departures[best] });
+    }
+  }
+
+  // Pass 2: fall back to op+equip+tightest-gap for arrivals not already paired.
+  for (const a of arrivals) {
+    if (turns.some(t => t.arr === a)) continue;
     let best = -1, bestGap = Infinity;
     for (let i = 0; i < departures.length; i++) {
       if (usedDep.has(i)) continue;
@@ -1311,10 +1428,32 @@ function pairOvernight(arrivals, departures, rules) {
   const sortedArr = [...arrivals].sort((a,b) => a._sdfMin - b._sdfMin);
   const used = new Set();
   const paired = [];
+
+  // Pass 1: prefer same flight # + equip + op (rare for RONs but very confident when present).
   for (const a of sortedArr) {
     let best = -1, bestGap = Infinity;
-    // Physical overnight gap: (midnight - arr_minute) + dep_minute_next_day
-    const fromArrToMidnight = 1440 - a._sdfMin; // negative if a._sdfMin > 1440 (post-midnight arrival)
+    const fromArrToMidnight = 1440 - a._sdfMin;
+    for (let i = 0; i < departures.length; i++) {
+      if (used.has(i)) continue;
+      const d = departures[i];
+      if (String(d.flight) !== String(a.flight)) continue;
+      if (d.opAl !== a.opAl) continue;
+      if (d.equip !== a.equip) continue;
+      const gap = fromArrToMidnight + d._sdfMin;
+      if (gap < MIN_GAP || gap > MAX_GAP) continue;
+      if (gap < bestGap) { bestGap = gap; best = i; }
+    }
+    if (best >= 0) {
+      used.add(best);
+      paired.push({ arr: a, dep: departures[best], gap_min: bestGap });
+    }
+  }
+
+  // Pass 2: op+equip+tightest-gap for remaining arrivals.
+  for (const a of sortedArr) {
+    if (paired.some(p => p.arr === a)) continue;
+    let best = -1, bestGap = Infinity;
+    const fromArrToMidnight = 1440 - a._sdfMin;
     for (let i = 0; i < departures.length; i++) {
       if (used.has(i)) continue;
       const d = departures[i];
@@ -1559,9 +1698,11 @@ function rebuildPlan() {
 }
 
 function visibleGates() {
-  return STATE.rules.gates.filter(g =>
+  const real = STATE.rules.gates.filter(g =>
     STATE.concourse === 'all' ? true : g.concourse === STATE.concourse
   );
+  const hs = STATE.hardstands.map(id => hardstandPseudoGate(id));
+  return [...real, ...hs];
 }
 
 function visibleAssignments() {
@@ -1590,7 +1731,18 @@ function renderGantt() {
   // Left col header
   html += `<div class="gate-col">`;
   html += `  <div class="gate-header-cell">Gate</div>`;
+  let firstHsSeen = false;
   for (const g of gates) {
+    const isHs = !!g._isHardstand;
+    const firstHs = isHs && !firstHsSeen;
+    if (isHs) firstHsSeen = true;
+    if (isHs) {
+      html += `<div class="gate-cell hardstand-cell ${firstHs ? 'first-hs' : ''}">
+        <div class="gate-num">${g.id}</div>
+        <div class="gate-meta"><span class="hs-tag">HARDSTAND</span></div>
+      </div>`;
+      continue;
+    }
     const lease = g.use_type === 'leased'
       ? `<span class="lease">${g.leaseholder || '—'}</span>`
       : g.use_type === 'common-use' ? `<span class="common">COMMON</span>` : '';
@@ -1625,10 +1777,15 @@ function renderGantt() {
     byGate.get(a.gate).push(a);
   }
 
+  let firstHsRowSeen = false;
   for (const g of gates) {
     const rowBars = byGate.get(g.id) || [];
     const inactive = g.status !== 'active' ? 'inactive' : '';
-    html += `<div class="row ${inactive}" data-gate="${g.id}" style="width:${totalW}px;background-image: repeating-linear-gradient(90deg, transparent, transparent ${60*px - 1}px, var(--border) ${60*px - 1}px, var(--border) ${60*px}px);">`;
+    const isHs = !!g._isHardstand;
+    const firstHs = isHs && !firstHsRowSeen;
+    if (isHs) firstHsRowSeen = true;
+    const hsCls = isHs ? `hardstand-row ${firstHs ? 'first-hs' : ''}` : '';
+    html += `<div class="row ${inactive} ${hsCls}" data-gate="${g.id}" style="width:${totalW}px;background-image: repeating-linear-gradient(90deg, transparent, transparent ${60*px - 1}px, var(--border) ${60*px - 1}px, var(--border) ${60*px}px);">`;
     for (const a of rowBars) {
       const left = minToPx(Math.max(a.bar_start, GANTT_START_MIN));
       const right = minToPx(Math.min(a.bar_end, GANTT_END_MIN));
@@ -1749,9 +1906,9 @@ function autoGateUnassigned() {
       pick = tryFit(op, leaseholderFirst, s, e);
       if (pick) compressed++;
     } else if (!pick && op.type === 'ron_in' && op.arr && op.arr.arrTime != null) {
-      const arrSdf = op.arr.arrTime + (op.arr.arrFlag > 0 ? 1440 : 0);
-      s = arrSdf;
-      e = Math.min(GANTT_END_MIN, arrSdf + RON_FOOTPRINT_MIN);
+      // arrTime is already sdfDate-local; no +1440 adjustment needed.
+      s = op.arr.arrTime;
+      e = Math.min(GANTT_END_MIN, s + RON_FOOTPRINT_MIN);
       pick = tryFit(op, leaseholderFirst, s, e);
       if (pick) compressed++;
     }
@@ -1924,7 +2081,7 @@ function showTooltip(e, idx) {
   } else if (a.type === 'ron_in') {
     lines.push(`<div class="tt-row"><span>Arrived from</span><b>${a.arr.orig} @ ${minToHHMM(a.arr.arrTime)}</b></div>`);
     if (a.paired && a.dep_next) {
-      lines.push(`<div class="tt-row"><span>Departs tomorrow</span><b>${a.dep_next.opAl} ${a.dep_next.flight} @ ${minToHHMM(a.dep_next.depTime)} → ${a.dep_next.dest}</b></div>`);
+      lines.push(`<div class="tt-row"><span>Departs ${a.dep_next.date}</span><b>${a.dep_next.opAl} ${a.dep_next.flight} @ ${minToHHMM(a.dep_next.depTime)} → ${a.dep_next.dest}</b></div>`);
       lines.push(`<div class="tt-row"><span>Overnight</span><b>⇌ paired</b></div>`);
     } else {
       lines.push(`<div class="tt-row"><span>Overnight</span><b style="color:var(--danger)">orphan — no next-day pair</b></div>`);
@@ -1932,7 +2089,7 @@ function showTooltip(e, idx) {
   } else { // ron_out
     lines.push(`<div class="tt-row"><span>Departs to</span><b>${a.dep.dest} @ ${minToHHMM(a.dep.depTime)}</b></div>`);
     if (a.paired && a.arr_prev) {
-      lines.push(`<div class="tt-row"><span>Arrived yesterday</span><b>${a.arr_prev.opAl} ${a.arr_prev.flight} from ${a.arr_prev.orig} @ ${minToHHMM(a.arr_prev.arrTime)}</b></div>`);
+      lines.push(`<div class="tt-row"><span>Arrived ${a.arr_prev.date}</span><b>${a.arr_prev.opAl} ${a.arr_prev.flight} from ${a.arr_prev.orig} @ ${minToHHMM(a.arr_prev.arrTime)}</b></div>`);
       lines.push(`<div class="tt-row"><span>Overnight</span><b>⇌ paired</b></div>`);
     } else {
       lines.push(`<div class="tt-row"><span>Overnight</span><b style="color:var(--danger)">orphan — no prior-day pair</b></div>`);
@@ -2177,7 +2334,7 @@ function onGanttMouseMove(e) {
   const op = STATE.assignments[DRAG.opIdx];
   const newGateId = row.dataset.gate;
   if (!newGateId || !op) return;
-  const gate = STATE.rules.gates.find(g => g.id === newGateId);
+  const gate = findGateById(newGateId);
   const valid = gate && reassignIsCompatible(op, gate);
   row.classList.add('drop-target');
   if (!valid) row.classList.add('invalid');
@@ -2208,6 +2365,7 @@ function onGanttMouseUp(e) {
 
 function reassignIsCompatible(op, gate) {
   if (gate.status !== 'active') return false;
+  if (gate._isHardstand) return true; // hardstands take any equipment
   const need = SIZE_RANK_LOCAL[sizeOfEquip(op.equip)] || 2;
   const cap  = SIZE_RANK_LOCAL[gate.max_size] || 2;
   return need <= cap;
@@ -2216,18 +2374,20 @@ function reassignIsCompatible(op, gate) {
 function attemptReassign(opIdx, newGateId) {
   const op = STATE.assignments[opIdx];
   if (!op) return;
-  const gate = STATE.rules.gates.find(g => g.id === newGateId);
+  const gate = findGateById(newGateId);
   if (!gate) return;
   if (gate.status !== 'active') {
     alert(`Gate ${newGateId} is ${gate.status} — cannot assign.`);
     return;
   }
-  const need = SIZE_RANK_LOCAL[sizeOfEquip(op.equip)] || 2;
-  if (need > (SIZE_RANK_LOCAL[gate.max_size] || 2)) {
-    alert(`Gate ${newGateId} (${gate.max_size}) is too small for ${op.equip} — needs ${sizeOfEquip(op.equip)}.`);
-    return;
+  if (!gate._isHardstand) {
+    const need = SIZE_RANK_LOCAL[sizeOfEquip(op.equip)] || 2;
+    if (need > (SIZE_RANK_LOCAL[gate.max_size] || 2)) {
+      alert(`Gate ${newGateId} (${gate.max_size}) is too small for ${op.equip} — needs ${sizeOfEquip(op.equip)}.`);
+      return;
+    }
   }
-  // Conflict check
+  // Conflict check (still applies for hardstands — one parking position each)
   const blockers = STATE.assignments.filter((a, i) =>
     i !== opIdx && a.gate === newGateId &&
     op.bar_start < a.bar_end && op.bar_end > a.bar_start
@@ -2235,15 +2395,17 @@ function attemptReassign(opIdx, newGateId) {
   let isConflict = false;
   if (blockers.length) {
     const labels = blockers.map(a => `${a.airline} ${a.dep?.flight || a.arr?.flight || a.arr_prev?.flight || a.dep_next?.flight || '?'}`).join(', ');
-    if (!confirm(`Gate ${newGateId} has a conflict with ${labels} in this window. Move anyway?`)) return;
+    if (!confirm(`${newGateId} has a conflict with ${labels} in this window. Move anyway?`)) return;
     isConflict = true;
   }
   op.gate = newGateId;
   op.conflict = isConflict;
   STATE.assignments.sort((a, b) => a.bar_start - b.bar_start);
+  if (gate._isHardstand) ensureEmptyHardstand();
   renderGantt();
   renderNeedsAttention();
   updateMetaAndSlots();
+  if (STATE.view === 'manual') renderUnassigned();
 }
 
 function manualAssign(opIdx, gateId, isConflict) {
@@ -2275,6 +2437,13 @@ function lookupFlight(flightStr, date, kind /* 'arrival' | 'departure' */) {
   );
 }
 
+function dateOptionsHtml(selected) {
+  const dates = STATE.availableDates || [];
+  return dates.map(d =>
+    `<option value="${d}" ${d === selected ? 'selected' : ''}>${d}</option>`
+  ).join('');
+}
+
 function openEditModal(op) {
   if (!op) return;
   EDIT.op = op;
@@ -2283,40 +2452,40 @@ function openEditModal(op) {
   const Dprev = neighborDate(STATE.flights, D, -1);
   const Dnext = neighborDate(STATE.flights, D, +1);
 
-  let title, intro, arrDate, depDate, arrFlight, arrDetail, depFlight, depDetail, showUnpair = false;
+  let title, intro;
+  let arrDefaultDate, depDefaultDate;
+  let arrFlight, depFlight;
+  let arrInitial, depInitial; // initial flight objects to seed the "Currently:" line
+  let showUnpair = false;
 
   if (op.type === 'turn') {
     title = `Edit turn — ${op.airline} ${op.arr.flight} / ${op.dep.flight}`;
-    intro = `Both legs are same-day (${D}). Change either flight number to a different SDF arrival or departure on this date.`;
-    arrDate = D;
-    depDate = D;
+    intro = `Both legs default to the viewed date (${D}). Change either flight number or date to re-pair against the extract.`;
+    arrDefaultDate = op.arr?.date || D;
+    depDefaultDate = op.dep?.date || D;
     arrFlight = op.arr?.flight || '';
-    arrDetail = currentDetail(op.arr, 'arr');
     depFlight = op.dep?.flight || '';
-    depDetail = currentDetail(op.dep, 'dep');
+    arrInitial = op.arr;
+    depInitial = op.dep;
   } else if (op.type === 'ron_in') {
-    title = `Edit RON pairing — ${op.airline} ${op.arr.flight} → next-day`;
-    intro = `Arrival on <b>${D}</b> paired with a departure on <b>${Dnext || '— (no next-day data)'}</b>. Edit flight numbers to fix or establish the pairing.`;
-    arrDate = D;
-    depDate = Dnext;
+    title = `Edit RON pairing — ${op.airline} ${op.arr.flight} → counterpart`;
+    intro = `Arrival on the viewed date (<b>${D}</b>) paired with a departure on another date (default <b>${Dnext || '— no next-day data'}</b>). Change the date to look up a different pairing.`;
+    arrDefaultDate = op.arr?.date || D;
+    depDefaultDate = op.dep_next?.date || Dnext || D;
     arrFlight = op.arr?.flight || '';
-    arrDetail = currentDetail(op.arr, 'arr');
     depFlight = op.dep_next?.flight || '';
-    depDetail = op.dep_next
-      ? currentDetail(op.dep_next, 'dep')
-      : `<span class="orphan-marker">orphan — no next-day pair</span>`;
+    arrInitial = op.arr;
+    depInitial = op.dep_next;
     showUnpair = !!op.dep_next;
   } else if (op.type === 'ron_out') {
-    title = `Edit RON pairing — prev-day → ${op.airline} ${op.dep.flight}`;
-    intro = `Departure on <b>${D}</b> paired with an arrival on <b>${Dprev || '— (no prev-day data)'}</b>. Edit flight numbers to fix or establish the pairing.`;
-    arrDate = Dprev;
-    depDate = D;
+    title = `Edit RON pairing — counterpart → ${op.airline} ${op.dep.flight}`;
+    intro = `Departure on the viewed date (<b>${D}</b>) paired with an arrival on another date (default <b>${Dprev || '— no prev-day data'}</b>). Change the date to look up a different pairing.`;
+    arrDefaultDate = op.arr_prev?.date || Dprev || D;
+    depDefaultDate = op.dep?.date || D;
     arrFlight = op.arr_prev?.flight || '';
-    arrDetail = op.arr_prev
-      ? currentDetail(op.arr_prev, 'arr')
-      : `<span class="orphan-marker">orphan — no prior-day pair</span>`;
     depFlight = op.dep?.flight || '';
-    depDetail = currentDetail(op.dep, 'dep');
+    arrInitial = op.arr_prev;
+    depInitial = op.dep;
     showUnpair = !!op.arr_prev;
   } else {
     return;
@@ -2327,24 +2496,65 @@ function openEditModal(op) {
     <div class="edit-error" id="edit-error"></div>
     <div class="modal-intro">${intro}</div>
     <div class="edit-field">
-      <label>Arrival flight # ${arrDate ? '(' + arrDate + ')' : '— no date in extract'}</label>
-      <input type="text" id="edit-arr-input" value="${arrFlight}" ${arrDate ? '' : 'disabled'} placeholder="${arrDate ? 'flight number' : ''}">
-      <div class="edit-current">${arrDetail}</div>
+      <label>Arrival flight</label>
+      <div class="edit-flex">
+        <input type="text" id="edit-arr-input" value="${arrFlight}" placeholder="flight number">
+        <select id="edit-arr-date">${dateOptionsHtml(arrDefaultDate)}</select>
+      </div>
+      <div class="edit-current" id="edit-arr-current">${
+        arrInitial ? currentDetail(arrInitial, 'arr')
+        : `<span class="orphan-marker">orphan — no arrival paired</span>`
+      }</div>
     </div>
     <div class="edit-field">
-      <label>Departure flight # ${depDate ? '(' + depDate + ')' : '— no date in extract'}</label>
-      <input type="text" id="edit-dep-input" value="${depFlight}" ${depDate ? '' : 'disabled'} placeholder="${depDate ? 'flight number' : ''}">
-      <div class="edit-current">${depDetail}</div>
+      <label>Departure flight</label>
+      <div class="edit-flex">
+        <input type="text" id="edit-dep-input" value="${depFlight}" placeholder="flight number">
+        <select id="edit-dep-date">${dateOptionsHtml(depDefaultDate)}</select>
+      </div>
+      <div class="edit-current" id="edit-dep-current">${
+        depInitial ? currentDetail(depInitial, 'dep')
+        : `<span class="orphan-marker">orphan — no departure paired</span>`
+      }</div>
     </div>`;
+
+  // Wire live refresh
+  ['edit-arr-input', 'edit-arr-date'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => refreshEditCurrent('arr'));
+    el.addEventListener('change', () => refreshEditCurrent('arr'));
+  });
+  ['edit-dep-input', 'edit-dep-date'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => refreshEditCurrent('dep'));
+    el.addEventListener('change', () => refreshEditCurrent('dep'));
+  });
 
   document.getElementById('edit-modal-unpair').style.display = showUnpair ? 'inline-block' : 'none';
   document.getElementById('edit-modal').classList.add('open');
-  // focus the editable input that's most likely the user's target
   setTimeout(() => {
-    if (op.type === 'ron_in' && Dnext) document.getElementById('edit-dep-input').focus();
-    else if (op.type === 'ron_out' && Dprev) document.getElementById('edit-arr-input').focus();
+    if (op.type === 'ron_in') document.getElementById('edit-dep-input').focus();
+    else if (op.type === 'ron_out') document.getElementById('edit-arr-input').focus();
     else document.getElementById('edit-arr-input').focus();
   }, 60);
+}
+
+function refreshEditCurrent(side) {
+  const inputId = side === 'arr' ? 'edit-arr-input' : 'edit-dep-input';
+  const dateId  = side === 'arr' ? 'edit-arr-date'  : 'edit-dep-date';
+  const curId   = side === 'arr' ? 'edit-arr-current' : 'edit-dep-current';
+  const kind    = side === 'arr' ? 'arrival' : 'departure';
+  const val = document.getElementById(inputId).value.trim();
+  const date = document.getElementById(dateId).value;
+  const el = document.getElementById(curId);
+  if (!val) {
+    el.innerHTML = `<span class="orphan-marker">cleared — will unpair this side</span>`;
+    return;
+  }
+  const f = lookupFlight(val, date, kind);
+  el.innerHTML = f
+    ? currentDetail(f, side)
+    : `<span class="orphan-marker">No ${kind} flight ${val} on ${date}</span>`;
 }
 
 function currentDetail(flight, kind) {
@@ -2368,24 +2578,24 @@ function showEditError(msg) {
 function saveEditModal() {
   const op = EDIT.op;
   if (!op) return closeEditModal();
-  const D = STATE.selectedDate;
-  const Dprev = neighborDate(STATE.flights, D, -1);
-  const Dnext = neighborDate(STATE.flights, D, +1);
 
   const arrInput = document.getElementById('edit-arr-input').value.trim();
+  const arrDate  = document.getElementById('edit-arr-date').value;
   const depInput = document.getElementById('edit-dep-input').value.trim();
+  const depDate  = document.getElementById('edit-dep-date').value;
 
   let arrFlight = null, depFlight = null;
 
+  if (arrInput) {
+    arrFlight = lookupFlight(arrInput, arrDate, 'arrival');
+    if (!arrFlight) return showEditError(`Arrival flight ${arrInput} not found on ${arrDate}.`);
+  }
+  if (depInput) {
+    depFlight = lookupFlight(depInput, depDate, 'departure');
+    if (!depFlight) return showEditError(`Departure flight ${depInput} not found on ${depDate}.`);
+  }
+
   if (op.type === 'turn') {
-    if (arrInput) {
-      arrFlight = lookupFlight(arrInput, D, 'arrival');
-      if (!arrFlight) return showEditError(`Arrival flight ${arrInput} not found on ${D}.`);
-    }
-    if (depInput) {
-      depFlight = lookupFlight(depInput, D, 'departure');
-      if (!depFlight) return showEditError(`Departure flight ${depInput} not found on ${D}.`);
-    }
     if (!arrFlight || !depFlight) return showEditError('A turn needs both arrival and departure.');
     op.arr = arrFlight;
     op.dep = depFlight;
@@ -2396,13 +2606,7 @@ function saveEditModal() {
     op.bar_start = arrFlight.arrTime + (arrFlight.arrFlag > 0 ? 1440 : 0);
     op.bar_end = depFlight.depTime;
   } else if (op.type === 'ron_in') {
-    if (!arrInput) return showEditError('Arrival flight (today) is required for a RON-IN.');
-    arrFlight = lookupFlight(arrInput, D, 'arrival');
-    if (!arrFlight) return showEditError(`Arrival flight ${arrInput} not found on ${D}.`);
-    if (depInput && Dnext) {
-      depFlight = lookupFlight(depInput, Dnext, 'departure');
-      if (!depFlight) return showEditError(`Departure flight ${depInput} not found on ${Dnext}.`);
-    }
+    if (!arrFlight) return showEditError('Arrival flight is required for a RON-IN.');
     op.arr = arrFlight;
     op.equip = arrFlight.equip;
     op.airline = arrFlight.mktAl;
@@ -2413,13 +2617,7 @@ function saveEditModal() {
     op.dep_next = depFlight || null;
     op.paired = !!depFlight;
   } else if (op.type === 'ron_out') {
-    if (!depInput) return showEditError('Departure flight (today) is required for a RON-OUT.');
-    depFlight = lookupFlight(depInput, D, 'departure');
-    if (!depFlight) return showEditError(`Departure flight ${depInput} not found on ${D}.`);
-    if (arrInput && Dprev) {
-      arrFlight = lookupFlight(arrInput, Dprev, 'arrival');
-      if (!arrFlight) return showEditError(`Arrival flight ${arrInput} not found on ${Dprev}.`);
-    }
+    if (!depFlight) return showEditError('Departure flight is required for a RON-OUT.');
     op.dep = depFlight;
     op.equip = depFlight.equip;
     op.airline = depFlight.mktAl;
