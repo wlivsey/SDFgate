@@ -687,8 +687,41 @@
   .bar.conflict {
     box-shadow: 0 0 0 2px var(--danger), 0 0 12px rgba(248,81,73,0.5);
   }
+  .bar.has-fids { box-shadow: 0 0 0 1px rgba(77, 190, 255, 0.55) inset; }
+  .bar.late { box-shadow: 0 0 0 1px var(--warn) inset; }
+  .bar.late-heavy { box-shadow: 0 0 0 2px var(--warn), 0 0 8px rgba(240,136,62,0.4); }
+  .bar.canceled {
+    opacity: 0.5;
+    background: repeating-linear-gradient(45deg, rgba(248,81,73,0.15), rgba(248,81,73,0.15) 6px, transparent 6px, transparent 12px) !important;
+    border-color: var(--danger) !important;
+  }
   .bar-line1 { font-size: 10px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bar-line2 { font-size: 9px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .fids-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4dbeff;
+    margin-right: 5px;
+    box-shadow: 0 0 4px #4dbeff;
+    vertical-align: middle;
+  }
+  .delay-chip {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 4px;
+    border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    vertical-align: middle;
+    background: rgba(240,136,62,0.18);
+    color: var(--warn);
+  }
+  .delay-chip.late-heavy { background: rgba(240,136,62,0.3); color: var(--warn); }
+  .delay-chip.early { background: rgba(63,185,80,0.18); color: var(--good); }
+  .delay-chip.canceled { background: rgba(248,81,73,0.25); color: var(--danger); }
 
   .cursor-line {
     position: absolute;
@@ -876,6 +909,34 @@
   .global-field input { color: var(--text); }
   .rules-actions { display: flex; gap: 8px; margin-top: 16px; }
 
+  .hdr-hint {
+    display: block; font-size: 9px; font-weight: 400;
+    color: var(--text-muted); text-transform: none; letter-spacing: 0;
+    margin-top: 2px;
+  }
+  .airline-chip-row {
+    display: flex; flex-wrap: wrap; gap: 3px; min-width: 180px;
+  }
+  .airline-chip {
+    --c: var(--text-muted);
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-strong);
+    padding: 2px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.1s ease;
+  }
+  .airline-chip:hover { border-color: var(--c); color: var(--c); }
+  .airline-chip.on {
+    background: color-mix(in srgb, var(--c) 18%, transparent);
+    border-color: var(--c);
+    color: var(--c);
+  }
+
   .needs-attention {
     background: rgba(248, 81, 73, 0.08);
     border: 1px solid var(--danger);
@@ -952,6 +1013,13 @@
         <input type="file" id="file-input" accept=".xlsx,.xls">
       </label>
       <span id="file-name" style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:10px;margin-left:4px;"></span>
+    </div>
+    <div class="control-group">
+      <label class="file-label" style="background:rgba(77, 190, 255, 0.12); color:#4dbeff; border-color:#4dbeff;">Load FIDS CSV
+        <input type="file" id="fids-input" accept=".csv" multiple>
+      </label>
+      <span id="fids-status" style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:10px;margin-left:4px;"></span>
+      <button class="btn" id="fids-clear" style="display:none;">Clear FIDS</button>
     </div>
     <div class="control-group">
       <span class="control-label">Date</span>
@@ -1118,6 +1186,11 @@ const STATE = {
   unassigned: [],
   conflicts: new Set(),   // assignment indices in conflict
   hardstands: ['HS1'],    // dynamically grows: a new empty HS is appended whenever all existing HS rows are occupied
+  // FIDS overlay: live gate + delay data layered on top of the Diio plan.
+  // Keys are `${mktAl}|${flight}|${sdfDate}` — value is the FIDS record.
+  fidsArrivals: new Map(),
+  fidsDepartures: new Map(),
+  fidsSourceFiles: [],    // [{name, kind, count}] for UI
 };
 
 // Hardstand helpers --------------------------------------------------------
@@ -1171,13 +1244,23 @@ async function loadDefaultRules() {
   }
 }
 
+function normalizeRules(rules) {
+  // Ensure forward-compatible fields exist on every gate.
+  if (rules && Array.isArray(rules.gates)) {
+    for (const g of rules.gates) {
+      if (!('allowed_airlines' in g)) g.allowed_airlines = null;
+    }
+  }
+  return rules;
+}
+
 function loadRules() {
   const stored = localStorage.getItem(RULES_KEY);
   if (stored) {
-    try { return JSON.parse(stored); }
+    try { return normalizeRules(JSON.parse(stored)); }
     catch (e) { console.warn('Bad stored rules, falling back to defaults'); }
   }
-  return JSON.parse(JSON.stringify(DEFAULT_RULES));
+  return normalizeRules(JSON.parse(JSON.stringify(DEFAULT_RULES)));
 }
 
 function saveRules(rules) {
@@ -1347,6 +1430,172 @@ async function loadDiioFile(file) {
   const datesSet = new Set();
   for (const f of flights) { datesSet.add(f.date); datesSet.add(f.sdfDate); }
   return { flights, dates: Array.from(datesSet).sort() };
+}
+
+// =============================================================
+// FIDS overlay (live gate + delay)
+// =============================================================
+// Parses the FIDS arrivals / departures CSV exports SDF currently pulls
+// twice a day. Each row becomes an overlay record keyed by mkt-al + flight
+// + SDF op-date. When the plan is rebuilt, the overlay supersedes the
+// Diio-derived gate and surfaces delay against scheduled time.
+
+function parseCSV(text) {
+  const rows = [];
+  let cur = [], field = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i+1] === '"') { field += '"'; i++; }
+        else inQ = false;
+      } else field += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { cur.push(field); field = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (field !== '' || cur.length) { cur.push(field); rows.push(cur); }
+        cur = []; field = '';
+        if (c === '\r' && text[i+1] === '\n') i++;
+      } else field += c;
+    }
+  }
+  if (field !== '' || cur.length) { cur.push(field); rows.push(cur); }
+  return rows;
+}
+
+function fidsKey(mktAl, flight, sdfDate) {
+  return `${String(mktAl).toUpperCase()}|${String(flight).replace(/\.0$/, '').trim()}|${sdfDate}`;
+}
+
+function updateFidsStatus() {
+  const el = document.getElementById('fids-status');
+  const clearBtn = document.getElementById('fids-clear');
+  if (!el) return;
+  const a = STATE.fidsArrivals.size, d = STATE.fidsDepartures.size;
+  if (!a && !d) { el.textContent = ''; clearBtn.style.display = 'none'; return; }
+  el.textContent = `${a} arr · ${d} dep`;
+  clearBtn.style.display = '';
+}
+
+// FIDS uses "MM/DD/YYYY" — Diio's sdfDate is "YYYY-MM-DD".
+function fidsDateToIso(s) {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!m) return String(s).slice(0, 10);
+  const mm = m[1].padStart(2, '0');
+  const dd = m[2].padStart(2, '0');
+  return `${m[3]}-${mm}-${dd}`;
+}
+
+async function loadFidsFile(file) {
+  const text = await file.text();
+  const rows = parseCSV(text);
+  if (!rows.length) throw new Error('Empty CSV');
+  const headers = rows[0].map(h => h.trim());
+  const idx = (name) => headers.indexOf(name);
+  const I = {
+    carrier: idx('carrierCode'),
+    flight: idx('flightNumber'),
+    orig: idx('originCode'),
+    dest: idx('destinationCode'),
+    date: idx('flightDate'),
+    schedUtc: idx('scheduledTimeUTC'),
+    currUtc: idx('currentTimeUTC'),
+    schedLocal: idx('scheduledTimeLocal'),
+    currLocal: idx('currentTimeLocal'),
+    gate: idx('gate'),
+    terminal: idx('terminal'),
+    status: idx('status'),
+    perf: idx('performanceStatusCode'),
+    tail: idx('aircraftRegistration'),
+    equip: idx('aircraftType'),
+    delayed: idx('delayed'),
+    early: idx('early'),
+    remarks: idx('remarks'),
+    canceled: idx('canceled'),
+  };
+  if (I.carrier < 0 || I.flight < 0 || I.date < 0) {
+    throw new Error('CSV missing required columns (carrierCode/flightNumber/flightDate)');
+  }
+  let arrCount = 0, depCount = 0;
+  let kind = null; // file-level kind, inferred from first row
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row || !row[I.carrier]) continue;
+    const carrier = String(row[I.carrier] || '').trim().toUpperCase();
+    const flight = String(row[I.flight] || '').trim();
+    const orig = String(row[I.orig] || '').trim().toUpperCase();
+    const dest = String(row[I.dest] || '').trim().toUpperCase();
+    const sdfDate = fidsDateToIso(row[I.date]);
+    if (!carrier || !flight || !sdfDate) continue;
+    const isDep = (orig === 'SDF');
+    const isArr = (dest === 'SDF');
+    if (!isDep && !isArr) continue;
+    if (kind === null) kind = isDep ? 'departures' : 'arrivals';
+    const schedUtc = row[I.schedUtc];
+    const currUtc = row[I.currUtc];
+    let delayMin = 0;
+    if (schedUtc && currUtc) {
+      const sd = Date.parse(schedUtc), cu = Date.parse(currUtc);
+      if (!Number.isNaN(sd) && !Number.isNaN(cu)) delayMin = Math.round((cu - sd) / 60000);
+    }
+    const rec = {
+      carrier, flight,
+      orig, dest,
+      sdfDate,
+      gate: (row[I.gate] || '').trim() || null,
+      schedUtc, currUtc,
+      schedLocal: row[I.schedLocal] || null,
+      currLocal: row[I.currLocal] || null,
+      delayMin,
+      tail: (row[I.tail] || '').trim() || null,
+      equip: (row[I.equip] || '').trim() || null,
+      status: row[I.status] || null,
+      perf: row[I.perf] || null,
+      remarks: row[I.remarks] || null,
+      delayed: row[I.delayed] === 'true',
+      early: row[I.early] === 'true',
+      canceled: row[I.canceled] === 'true',
+    };
+    const key = fidsKey(carrier, flight, sdfDate);
+    if (isDep) { STATE.fidsDepartures.set(key, rec); depCount++; }
+    else { STATE.fidsArrivals.set(key, rec); arrCount++; }
+  }
+  return { arrCount, depCount, kind: kind || 'unknown' };
+}
+
+// Look up the FIDS record matching a Diio flight row.
+function fidsLookup(flight, isDeparture) {
+  if (!flight) return null;
+  const key = fidsKey(flight.mktAl, flight.flight, flight.sdfDate);
+  return (isDeparture ? STATE.fidsDepartures : STATE.fidsArrivals).get(key) || null;
+}
+
+// Apply FIDS overlay onto the ops list before autoAssign runs.
+// Stamps op.gate (pinning the assignment) plus delay/tail/status fields used
+// by the renderer and tooltip.
+function applyFidsOverlay(ops) {
+  for (const op of ops) {
+    const arrFlight = op.arr;
+    const depFlight = op.dep;
+    const arrFids = arrFlight ? fidsLookup(arrFlight, false) : null;
+    const depFids = depFlight ? fidsLookup(depFlight, true) : null;
+    if (arrFids) op.fids_arr = arrFids;
+    if (depFids) op.fids_dep = depFids;
+
+    // Gate pin precedence: departure FIDS gate wins for turns/ron_out
+    // (more recent / actual position), otherwise arrival FIDS gate.
+    const pinGate = (depFids && depFids.gate) || (arrFids && arrFids.gate);
+    if (pinGate) op.gate = pinGate;
+
+    // Surface delays for the bar rendering.
+    if (arrFids && Math.abs(arrFids.delayMin) >= 1) op.arr_delay_min = arrFids.delayMin;
+    if (depFids && Math.abs(depFids.delayMin) >= 1) op.dep_delay_min = depFids.delayMin;
+    if ((arrFids && arrFids.canceled) || (depFids && depFids.canceled)) op.fids_canceled = true;
+    op.fids_tail = (depFids && depFids.tail) || (arrFids && arrFids.tail) || null;
+  }
+  return ops;
 }
 
 // =============================================================
@@ -1592,9 +1841,18 @@ function gateAcceptsEquip(gate, equip, rules) {
   return need <= cap;
 }
 
-function gatePrefersAirline(gate, airline) {
+function gateAllowsAirline(gate, airline) {
+  // Explicit allowlist wins over use_type defaults.
+  // null or empty array = no per-gate restriction (fall back to use_type).
+  if (Array.isArray(gate.allowed_airlines) && gate.allowed_airlines.length) {
+    return gate.allowed_airlines.includes(airline);
+  }
   if (gate.use_type === 'leased') return gate.leaseholder === airline;
-  return true;
+  return true; // common-use / preferential with no allowlist
+}
+
+function gatePrefersAirline(gate, airline) {
+  return gateAllowsAirline(gate, airline);
 }
 
 function autoAssign(flightOps, rules) {
@@ -1614,16 +1872,23 @@ function autoAssign(flightOps, rules) {
     return (ord[a.type] || 1) - (ord[b.type] || 1);
   });
 
+  // Pre-place FIDS-pinned ops first so live gate assignments are authoritative.
+  // op.gate is set by the FIDS overlay before this function runs.
   for (const op of ordered) {
+    if (!op.gate) continue;
+    const occ = occupancy.get(op.gate);
+    if (!occ) { op.gate = null; continue; } // unknown gate, fall through to normal assignment
+    occ.push({ start: op.bar_start, end: op.bar_end, airline: op.airline });
+    assignments.push({ ...op, fids_pinned: true });
+  }
+
+  for (const op of ordered) {
+    if (op.gate) continue; // already pinned above
     const airline = op.airline;
     // Score candidate gates
     const candidates = rules.gates
       .filter(g => gateAcceptsEquip(g, op.equip, rules))
-      .filter(g => {
-        // leased gate: airline must match; common-use: open to all
-        if (g.use_type === 'leased' && g.leaseholder !== airline) return false;
-        return true;
-      })
+      .filter(g => gateAllowsAirline(g, airline))
       .filter(g => {
         const occ = occupancy.get(g.id);
         for (const iv of occ) {
@@ -1644,9 +1909,16 @@ function autoAssign(flightOps, rules) {
       });
       pick = candidates[0];
     } else {
-      // Fall back: any active gate with capacity, even if leased to other airline
+      // Fall back: any active gate with capacity that still respects the airline allowlist.
+      // (Allowlist is a hard restriction — only leased→leaseholder default is relaxed here.)
       const fallback = rules.gates
         .filter(g => gateAcceptsEquip(g, op.equip, rules))
+        .filter(g => {
+          if (Array.isArray(g.allowed_airlines) && g.allowed_airlines.length) {
+            return g.allowed_airlines.includes(airline);
+          }
+          return true; // ignore leaseholder for fallback, but still honor explicit allowlist
+        })
         .filter(g => {
           const occ = occupancy.get(g.id);
           for (const iv of occ) {
@@ -1687,6 +1959,7 @@ function rebuildPlan() {
   document.getElementById('gantt').style.display = 'grid';
 
   const ops = buildOpsForDate(STATE.flights, STATE.selectedDate, STATE.rules);
+  applyFidsOverlay(ops);
   const { assignments, unassigned } = autoAssign(ops, STATE.rules);
   STATE.assignments = assignments;
   STATE.unassigned = unassigned;
@@ -1804,14 +2077,31 @@ function renderGantt() {
           ? `${a.arr.orig} → SDF`
           : `SDF → ${a.dep.dest}`;
       const linkIcon = (isRon && a.paired) ? '<span class="pair-link">⇌</span>' : '';
-      html += `<div class="${cls}"
+      const maxDelay = Math.max(
+        Math.abs(a.arr_delay_min || 0),
+        Math.abs(a.dep_delay_min || 0)
+      );
+      const signedDelay = (a.dep_delay_min || a.arr_delay_min || 0);
+      const delayCls = a.fids_canceled ? 'canceled'
+        : signedDelay >= 15 ? 'late-heavy'
+        : signedDelay >= 5 ? 'late'
+        : signedDelay <= -5 ? 'early'
+        : '';
+      const delayChip = a.fids_canceled
+        ? `<span class="delay-chip canceled">CXL</span>`
+        : maxDelay >= 5
+          ? `<span class="delay-chip ${delayCls}">${signedDelay > 0 ? '+' : ''}${signedDelay}m</span>`
+          : '';
+      const fidsBadge = (a.fids_arr || a.fids_dep) ? `<span class="fids-dot" title="Live FIDS"></span>` : '';
+      const fidsCls = (a.fids_arr || a.fids_dep) ? 'has-fids' : '';
+      html += `<div class="${cls} ${delayCls} ${fidsCls}"
         data-bar-idx="${STATE.assignments.indexOf(a)}"
         style="left:${left}px; width:${w}px;
           background:var(--c-${cVar}-soft);
           border-color:var(--c-${cVar});
           color:var(--text);">
-        <div class="bar-line1" style="color:var(--c-${cVar})">${flightLabel}</div>
-        <div class="bar-line2">${a.equip} • ${route}</div>
+        <div class="bar-line1" style="color:var(--c-${cVar})">${fidsBadge}${flightLabel}${delayChip}</div>
+        <div class="bar-line2">${a.equip} • ${route}${a.fids_tail ? ' • ' + a.fids_tail : ''}</div>
         ${linkIcon}
       </div>`;
     }
@@ -2097,6 +2387,25 @@ function showTooltip(e, idx) {
   }
   lines.push(`<div class="tt-row"><span>Equip</span><b>${a.equip}${a.seats ? ` · ${a.seats} seats` : ''}</b></div>`);
   lines.push(`<div class="tt-row"><span>Op</span><b>${a.op}</b></div>`);
+  // FIDS overlay
+  if (a.fids_arr || a.fids_dep || a.fids_tail) {
+    lines.push(`<div class="tt-row"><span style="color:#4dbeff;">FIDS</span><b style="color:#4dbeff;">live</b></div>`);
+    if (a.fids_tail) lines.push(`<div class="tt-row"><span>Tail</span><b>${a.fids_tail}</b></div>`);
+    const fmtDelay = (m) => m > 0 ? `<span style="color:var(--warn)">+${m}m late</span>`
+                          : m < 0 ? `<span style="color:var(--good)">${m}m early</span>`
+                          : `<span style="color:var(--good)">on time</span>`;
+    if (a.fids_arr) {
+      const f = a.fids_arr;
+      lines.push(`<div class="tt-row"><span>Arr (live)</span><b>${f.gate ? f.gate + ' · ' : ''}${fmtDelay(f.delayMin || 0)}</b></div>`);
+      if (f.remarks && f.remarks !== 'On Time') lines.push(`<div class="tt-row"><span>Status</span><b>${f.remarks}</b></div>`);
+    }
+    if (a.fids_dep) {
+      const f = a.fids_dep;
+      lines.push(`<div class="tt-row"><span>Dep (live)</span><b>${f.gate ? f.gate + ' · ' : ''}${fmtDelay(f.delayMin || 0)}</b></div>`);
+      if (f.remarks && f.remarks !== 'On Time') lines.push(`<div class="tt-row"><span>Status</span><b>${f.remarks}</b></div>`);
+    }
+    if (a.fids_canceled) lines.push(`<div class="tt-row"><span>Status</span><b style="color:var(--danger)">CANCELED</b></div>`);
+  }
   tooltip.innerHTML = lines.join('');
   tooltip.style.display = 'block';
   moveTooltip(e);
@@ -2232,8 +2541,8 @@ function renderGatePicker(opIdx, body) {
     const capOk = need <= (SIZE_RANK_LOCAL[g.max_size] || 2);
     const compat = active && capOk;
     const blockers = compat ? occupancy.get(g.id).filter(iv => op.bar_start < iv.e && op.bar_end > iv.s) : [];
-    const leaseMatch = g.use_type === 'common-use' || g.leaseholder === op.airline;
-    const preferred = compat && !blockers.length && leaseMatch;
+    const airlineAllowed = gateAllowsAirline(g, op.airline);
+    const preferred = compat && !blockers.length && airlineAllowed;
     const free = compat && !blockers.length;
     return { g, compat, free, preferred, blockers, active, capOk };
   });
@@ -2368,7 +2677,9 @@ function reassignIsCompatible(op, gate) {
   if (gate._isHardstand) return true; // hardstands take any equipment
   const need = SIZE_RANK_LOCAL[sizeOfEquip(op.equip)] || 2;
   const cap  = SIZE_RANK_LOCAL[gate.max_size] || 2;
-  return need <= cap;
+  if (need > cap) return false;
+  if (!gateAllowsAirline(gate, op.airline)) return false;
+  return true;
 }
 
 function attemptReassign(opIdx, newGateId) {
@@ -2385,6 +2696,12 @@ function attemptReassign(opIdx, newGateId) {
     if (need > (SIZE_RANK_LOCAL[gate.max_size] || 2)) {
       alert(`Gate ${newGateId} (${gate.max_size}) is too small for ${op.equip} — needs ${sizeOfEquip(op.equip)}.`);
       return;
+    }
+    if (!gateAllowsAirline(gate, op.airline)) {
+      const allowed = (Array.isArray(gate.allowed_airlines) && gate.allowed_airlines.length)
+        ? gate.allowed_airlines.join('/')
+        : (gate.leaseholder || '—');
+      if (!confirm(`Gate ${newGateId} is restricted to ${allowed}. Assign ${op.airline} anyway?`)) return;
     }
   }
   // Conflict check (still applies for hardstands — one parking position each)
@@ -2680,10 +2997,18 @@ function renderRules() {
 
   // gates table
   const tbl = document.getElementById('gates-table');
+  const carriers = (STATE.rules.carriers || []).map(c => c.code);
+  const chipCell = (g) => {
+    const allowed = Array.isArray(g.allowed_airlines) ? g.allowed_airlines : [];
+    return carriers.map(code => {
+      const on = allowed.includes(code);
+      return `<button type="button" class="airline-chip ${on ? 'on' : ''}" data-chip="${code}" style="--c:var(--c-${code});">${code}</button>`;
+    }).join('');
+  };
   tbl.innerHTML = `
     <thead><tr>
       <th>Gate</th><th>Concourse</th><th>Status</th><th>Use type</th>
-      <th>Leaseholder</th><th>Max size</th><th>Jet bridge</th><th>Hardstand</th><th>Notes</th><th></th>
+      <th>Leaseholder</th><th>Max size</th><th>Allowed airlines<br><span class="hdr-hint">empty = any</span></th><th>Jet bridge</th><th>Hardstand</th><th>Notes</th><th></th>
     </tr></thead>
     <tbody>
     ${STATE.rules.gates.map((g, idx) => `
@@ -2706,6 +3031,7 @@ function renderRules() {
           <option ${g.max_size==='narrowbody'?'selected':''}>narrowbody</option>
           <option ${g.max_size==='widebody'?'selected':''}>widebody</option>
         </select></td>
+        <td><div class="airline-chip-row" data-chips>${chipCell(g)}</div></td>
         <td><input type="checkbox" data-f="jet_bridge" ${g.jet_bridge?'checked':''}></td>
         <td><input type="checkbox" data-f="hardstand" ${g.hardstand?'checked':''}></td>
         <td><input data-f="notes" value="${(g.notes||'').replace(/"/g,'&quot;')}"></td>
@@ -2723,6 +3049,17 @@ function renderRules() {
         if (inp.type === 'checkbox') v = inp.checked;
         else v = inp.value;
         STATE.rules.gates[idx][f] = (f === 'leaseholder' && v === '') ? null : v;
+      });
+    });
+    tr.querySelectorAll('.airline-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.dataset.chip;
+        const g = STATE.rules.gates[idx];
+        let list = Array.isArray(g.allowed_airlines) ? [...g.allowed_airlines] : [];
+        if (list.includes(code)) list = list.filter(c => c !== code);
+        else list.push(code);
+        g.allowed_airlines = list.length ? list : null;
+        btn.classList.toggle('on');
       });
     });
     tr.querySelector('[data-action="del"]').addEventListener('click', () => {
@@ -2863,6 +3200,31 @@ function wireEvents() {
       alert('Failed to parse Diio file: ' + err.message);
       console.error(err);
     }
+  });
+
+  // FIDS input (accepts one or more CSVs — arrivals + departures)
+  document.getElementById('fids-input').addEventListener('change', async e => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    for (const f of files) {
+      try {
+        const { arrCount, depCount, kind } = await loadFidsFile(f);
+        STATE.fidsSourceFiles.push({ name: f.name, kind, arrCount, depCount });
+      } catch (err) {
+        alert(`Failed to parse FIDS file "${f.name}": ${err.message}`);
+        console.error(err);
+      }
+    }
+    updateFidsStatus();
+    rebuildPlan();
+    e.target.value = ''; // allow re-uploading the same file after edits
+  });
+  document.getElementById('fids-clear').addEventListener('click', () => {
+    STATE.fidsArrivals.clear();
+    STATE.fidsDepartures.clear();
+    STATE.fidsSourceFiles = [];
+    updateFidsStatus();
+    rebuildPlan();
   });
 
   // Gantt bar hover/click + drag-to-reassign
